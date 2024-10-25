@@ -4,7 +4,7 @@
 <head>
 
     <meta charset="utf-8" />
-    <title>Sign In | Yamaha Motor</title>
+    <title>Sign In | py - Express</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Yamaha Motor Indonesia" name="description" />
     <meta content="Themesbrand" name="author" />
@@ -49,7 +49,7 @@
                     <div class="col-lg-12">
                         <div class="card overflow-hidden">
                             <div class="row g-0">
-                                <div class="col-lg-6" id="divImage">
+                                <div class="col-lg-6 d-none" id="divImage">
                                     <div class="swiper default-swiper rounded swiper-initialized swiper-horizontal swiper-backface-hidden">
                                         <div class="swiper-wrapper" id="" aria-live="off">
                                             <div class="swiper-slide swiper-slide-active" role="group" data-swiper-slide-index="1" style="width: 400px;">
@@ -96,12 +96,12 @@
                                     <div class="p-lg-5 p-4">
                                         <div>
                                             <div class="d-flex">
-                                                <h4 style="font-size: 40px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;"><strong>YAMVAS</strong></h4>
+                                                <img id="logo" src="<?= base_url('jar/html/default/') ?>assets/images/small/yusen-logistics.png" alt="" height="50">
+                                                <!-- <h4 style="font-size: 40px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;"><strong>PY - Express</strong></h4> -->
                                             </div>
-                                            <p>Yamaha Visual Application System</p>
-                                            <img id="logo" src="<?= base_url('jar/html/default/') ?>assets/images/small/yusen-logistics.png" alt="" height="50">
-                                            &nbsp;
-                                            <img id="logo" src="<?= base_url('jar/html/default/') ?>assets/images/small/yamaha-indonesia.png" alt="" height="70">
+                                            <p>Tracking Delivery System By PYID</p>
+                                            <!-- &nbsp; -->
+                                            <!-- <img id="logo" src="<?= base_url('jar/html/default/') ?>assets/images/small/yamaha-indonesia.png" alt="" height="70"> -->
                                             <!-- <h5 class="text-primary">Indonesia</h5> -->
                                             <!-- <p class="text-muted">Indonesia.</p> -->
                                         </div>

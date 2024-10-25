@@ -65,10 +65,8 @@ class User_m extends CI_Model
 
     function getUserActive($username = null, $password = null)
     {
-        $this->db->select('a.id, a.fullname, a.username, a.role, c.id as position_id, c.name as position_name, b.role as role_name');
+        $this->db->select('a.id, a.fullname, a.username, a.role');
         $this->db->from('master_user a');
-        $this->db->join('master_role b', 'b.id = a.role', 'left');
-        $this->db->join('master_position c', 'c.id = a.position', 'left');
         $this->db->where('a.is_deleted <> ', 'Y');
         if ($username != null && $password != null) {
             $this->db->where('a.username', $username);

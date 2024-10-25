@@ -26,7 +26,9 @@ function list_menu()
 function parentMenu()
 {
     $CI = &get_instance();
-    $query = $CI->db->get('master_parent_menu');
+    $sql = "SELECT * FROM master_parent_menu order by no asc";
+    $query = $CI->db->query($sql);
+
     return $query;
 }
 

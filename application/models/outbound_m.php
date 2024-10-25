@@ -295,6 +295,11 @@ class Outbound_m extends CI_Model
             FROM tb_out a
             INNER JOIN pl_h b ON a.pl_id = b.id
             WHERE b.activity_date BETWEEN '$start_date' AND '$end_date'
+        ),
+        InfoSuratJalan AS (
+            SELECT COUNT(sj_no) AS total_sj FROM pl_h
+            WHERE activity_date BETWEEN '$start_date' AND '$end_date'
+            AND sj_no <> ''
         )
         SELECT 
             ou.count_unproses AS outbound_unproses,
@@ -303,15 +308,10 @@ class Outbound_m extends CI_Model
             op.qty_proses AS qty_proses,
             oc.count_complete AS outbound_complete,
             oc.qty_complete AS qty_complete,
+            isj.total_sj AS total_sj,
             (op.count_proses + oc.count_complete + ou.count_unproses) AS total_pl,
             (op.qty_proses + oc.qty_complete + ou.qty_unproses) AS total_qty
-            --CASE 
-            --    WHEN (op.count_proses + oc.count_complete) <> 0 THEN
-            --        (CAST(oc.count_complete AS FLOAT) / 
-            --            (op.count_proses + oc.count_complete)) * 100
-            --    ELSE 0 
-            --END AS presentase
-        FROM OutboundUnProses ou, OutboundProses op, OutboundComplete oc;";
+        FROM OutboundUnProses ou, OutboundProses op, OutboundComplete oc, InfoSuratJalan isj;";
         $query = $this->db->query($sql);
         return $query;
     }

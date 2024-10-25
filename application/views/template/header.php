@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="<?= ($this->uri->segment(1) == 'dashboardx' && $this->uri->segment(2) == 'index') ? 'sm' : 'lg' ?>" data-sidebar-image="none" data-preloader="disable">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="<?= ($this->uri->segment(1) == 'order' && $this->uri->segment(2) == 'planningOrder') ? 'sm' : 'lg' ?>" data-sidebar-image="none" data-preloader="disable">
 
 <head>
 
@@ -285,7 +285,7 @@ $ws_first_path =  $ws_config->first_path;
                         </button>
 
                         <div class="ms-1 header-item d-sm-flex">
-                            <span class="badge bg-success rounded-pill" id="spDC">Unit Test</span>
+                            <h4 class="mb-sm-0"><?= $title ??  '' ?></h4>
                         </div>
 
                     </div>
@@ -361,7 +361,7 @@ $ws_first_path =  $ws_config->first_path;
                 <!-- Dark Logo-->
                 <a href="#" class="logo logo-dark">
                     <span class="logo-sm">
-                        <img src="<?= base_url('jar/html/default/') ?>assets/images/pandurasa_kharisma_pt.png" alt="" height="22">
+                        <img src="<?= base_url('jar/html/default/') ?>assets/images/yusen-logo.png" alt="" height="22">
                     </span>
                     <span class="logo-lg">
                         <img src="<?= base_url('jar/html/default/') ?>assets/images/yusen-logo.png" alt="" height="17">
@@ -376,7 +376,7 @@ $ws_first_path =  $ws_config->first_path;
                         <div class="">
                             <img style="border-radius: 5%; margin-top: 5px;" src="<?= base_url('jar/html/default/') ?>assets/images/Yusen_Logistics_White.png" alt="" height="80">
                             <br>
-                            <p style="margin-top:-30px !important; color: white; font-size: 25px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;"><strong>YAMVAS</strong></p>
+                            <!-- <p style="margin-top:-30px !important; color: white; font-size: 25px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;"><strong>YAMVAS</strong></p> -->
                         </div>
                     </span>
                 </a>

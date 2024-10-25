@@ -8,11 +8,11 @@
 <div class="row">
     <div class="col col-md-12">
         <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0">Picking List</h4>
+            <h4 class="mb-sm-0">List Order</h4>
 
             <div class="page-title-right">
                 <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="javascript: void(0);">Picking List</a></li>
+                    <li class="breadcrumb-item"><a href="javascript: void(0);">List Order</a></li>
                 </ol>
             </div>
 
@@ -24,23 +24,66 @@
     <div class="col col-md-12">
         <div class="card">
             <div class="card-header bg-primary d-flex">
-                <span style="white-space: nowrap; color: whitesmoke; padding-top: 10px;">Activity Date : &nbsp; </span>
-                <input type="text" class="form-control" style="display:none; width: 200px; margin-right: 10px;" id="sChecker" placeholder="Checker">
-                <input type="date" class="form-control" style="width: 200px; margin-right: 10px;" id="sStartDate" placeholder="Start Date">
-                <input type="date" class="form-control" style="width: 200px; margin-right: 10px;" id="sEndDate" placeholder="End Date">
+                <!-- <span style="white-space: nowrap; color: whitesmoke; padding-top: 10px;">Order Table  &nbsp; </span> -->
+                <!-- <input type="date" class="form-control-sm" style="width: 200px; margin-right: 10px;" id="sStartDate" placeholder="Start Date">
+                <input type="date" class="form-control-sm" style="width: 200px; margin-right: 10px;" id="sEndDate" placeholder="End Date">
                 <button class="btn btn-outline-success" id="sButton"><i class="ri-filter-fill"></i></button>&nbsp;&nbsp;
-                <button class="btn btn-info" id="btnAdd">Add new</button>&nbsp;&nbsp;
-                <button class="btn btn-warning" id="btnAddSJ">Add SJ</button>&nbsp;&nbsp;
-                <button style="display: none;" class="btn btn-success" id="btnRefresh">Refresh</button>
+                <button class="btn btn-info" id="btnAdd">Add new</button>&nbsp;&nbsp; -->
             </div>
-            <div class="card-body table-responsive" id="cardPL">
-
+            <div class="card-body table-responsive">
+                <div class="mb-3">
+                    <input type="text" id="search" class="form-control-sm" placeholder="Search by Customer Name">
+                </div>
+                <table class="table table-bordered table-sm table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>No.</th>
+                            <th>SPK Number</th>
+                            <th>SPK Date</th>
+                            <th>Order Date</th>
+                            <th>Truck</th>
+                            <th>Total Drop</th>
+                            <th>Origin Qty</th>
+                            <th>Load Qty</th>
+                            <th>Total DO</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order_data">
+                        <?php
+                        $no = 1;
+                        foreach ($order->result() as $data) {
+                        ?>
+                            <tr>
+                                <td><?= $no++ ?></td>
+                                <td><?= $data->spk_number ?></td>
+                                <td><?= $data->spk_date ?></td>
+                                <td><?= $data->order_date ?></td>
+                                <td><?= $data->truck_name ?></td>
+                                <td><?= $data->total_drop ?></td>
+                                <td><?= $data->qty_ori ?></td>
+                                <td><?= $data->qty_loading ?></td>
+                                <td><?= $data->total_dn ?></td>
+                                <td><?= $data->status ?? '' ?></td>
+                                <td>
+                                    <a href="<?= base_url() ?>order/spkShow?spk=<?= $data->spk_number ?>" class="btn btn-sm btn-secondary btnPrint" data-id="<?= $data->id ?>">Print</a>
+                                    <a href="<?= base_url() ?>order/planningOrder?edit=true&spk=<?= $data->spk_number ?>" class="btn btn-sm btn-primary btnView" data-id="<?= $data->id ?>">View</a>
+                                    <a class="btn btn-sm btn-secondary btnChange" data-id="<?= $data->id ?>">Change</a>
+                                </td>
+                            </tr>
+                        <?php
+                        }
+                        ?>
+                    </tbody>
+                </table>
+                <div id="pagination_link"></div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modalFormSJ" aria-labelledby="exampleModalgridLabel" aria-modal="true">
+<!-- <div class="modal fade" id="modalFormSJ" aria-labelledby="exampleModalgridLabel" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -71,10 +114,10 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <!-- Grids in modals -->
-<div class="modal fade" id="modalForm" aria-labelledby="exampleModalgridLabel" aria-modal="true">
+<!-- <div class="modal fade" id="modalForm" aria-labelledby="exampleModalgridLabel" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -228,9 +271,55 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 <script src="<?= base_url() ?>myassets/js/select2.min.js"></script>
+
 <script>
+    $(document).ready(function() {
+
+
+        let limit = 5;
+        let start = 0;
+        let search_value = '';
+
+
+        // getOrderList();
+        // function getOrderList() {
+
+        //     var today = new Date().toISOString().split('T')[0];
+        //     if ($('#sStartDate').val() == '') {
+        //         $('#sStartDate').val(today)
+        //     }
+        //     if ($('#sEndDate').val() == '') {
+        //         $('#sEndDate').val(today)
+        //     }
+
+        //     let sDate = $('#sStartDate').val();
+        //     let eDate = $('#sEndDate').val();
+
+        //     // let divTable = $('#divSchedule');
+        //     // divTable.empty();
+        //     $.ajax({
+        //         url: "getListOrder",
+        //         type: "POST",
+        //         data: {
+        //             startDate: sDate,
+        //             endDate: eDate
+        //         },
+        //         dataType: 'JSON',
+        //         success: function(response) {
+        //             // if (response.success == true) {
+        //             //     $('#cardPL').empty();
+        //             //     $('#cardPL').html(response.table);
+        //             //     $('#tablePL').dataTable();
+        //             // }
+        //         }
+        //     });
+        // }
+    })
+</script>
+
+<!-- <script>
     $(document).ready(function() {
 
         var socket;
@@ -659,4 +748,4 @@
             }, 'json');
         }
     });
-</script>
+</script> -->

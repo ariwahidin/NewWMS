@@ -245,14 +245,11 @@
 
             socket.onclose = function(event) {
                 $('#spConnect').html(`<i class="ri-alert-fill"></i>`);
-                // console.log('WebSocket connection closed');
-                // Try to re-initiate connection after a delay
                 setTimeout(initWebSocket, 5000); // Retry after 5 seconds
             };
 
             socket.onerror = function(error) {
                 console.error('WebSocket error: ' + error);
-                // Handle WebSocket error, if necessary
             };
         }
 
