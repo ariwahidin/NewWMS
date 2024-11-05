@@ -19,28 +19,32 @@ class Dashboard extends CI_Controller
 
     public function index()
     {
-        $mein_db = $this->load->database('mein', TRUE);
-        $mein_query = $mein_db->query("SELECT 'MEIN' AS WMS_CODE, SHIPMENT_ID, TRAILING_STS, LEADING_STS, CUSTOMER, SHIP_TO, SHIP_TO_ADDRESS1, SHIP_TO_NAME, ACTUAL_SHIP_DATE_TIME, SHIP_TO_CITY
-        FROM SHIPMENT_HEADER 
-        WHERE LEADING_STS = '900' AND ACTUAL_SHIP_DATE_TIME >= DATEADD(DAY, -7, GETDATE())");
+        // $mein_db = $this->load->database('mein', TRUE);
+        // $mein_query = $mein_db->query("SELECT 'MEIN' AS WMS_CODE, SHIPMENT_ID, TRAILING_STS, LEADING_STS, CUSTOMER, SHIP_TO, SHIP_TO_ADDRESS1, SHIP_TO_NAME, ACTUAL_SHIP_DATE_TIME, SHIP_TO_CITY
+        // FROM SHIPMENT_HEADER 
+        // WHERE LEADING_STS = '900' AND ACTUAL_SHIP_DATE_TIME >= DATEADD(DAY, -7, GETDATE())");
 
-        $asics_db = $this->load->database('asics', TRUE);
-        $asics_query = $asics_db->query("SELECT 'ASICS' AS WMS_CODE, SHIPMENT_ID, TRAILING_STS, LEADING_STS, CUSTOMER, SHIP_TO, SHIP_TO_ADDRESS1, SHIP_TO_NAME, ACTUAL_SHIP_DATE_TIME, SHIP_TO_CITY
-        FROM SHIPMENT_HEADER 
-        WHERE LEADING_STS = '900' AND ACTUAL_SHIP_DATE_TIME >= DATEADD(DAY, -7, GETDATE())");
+        // $asics_db = $this->load->database('asics', TRUE);
+        // $asics_query = $asics_db->query("SELECT 'ASICS' AS WMS_CODE, SHIPMENT_ID, TRAILING_STS, LEADING_STS, CUSTOMER, SHIP_TO, SHIP_TO_ADDRESS1, SHIP_TO_NAME, ACTUAL_SHIP_DATE_TIME, SHIP_TO_CITY
+        // FROM SHIPMENT_HEADER 
+        // WHERE LEADING_STS = '900' AND ACTUAL_SHIP_DATE_TIME >= DATEADD(DAY, -7, GETDATE())");
 
-            // Convert result objects to array
-        $mein_results = $mein_query->result_array();
-        $asics_results = $asics_query->result_array();
+        //     // Convert result objects to array
+        // $mein_results = $mein_query->result_array();
+        // $asics_results = $asics_query->result_array();
 
-        // Gabungkan semua data shipment
-        $all_shipments = array_merge($mein_results, $asics_results);
+        // // Gabungkan semua data shipment
+        // $all_shipments = array_merge($mein_results, $asics_results);
 
         // Dump all shipment data
         // var_dump($all_shipments);
 
+        // $data = array(
+        //     'shipments' => $all_shipments
+        // );
+
         $data = array(
-            'shipments' => $all_shipments
+            'shipments' => null
         );
 
         $this->render('dashboard/index', $data);

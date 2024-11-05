@@ -61,13 +61,8 @@ class Order extends CI_Controller
         echo json_encode($response);
     }
 
-
     public function getOrder()
     {
-
-        // var_dump($_POST);
-
-
         $shipment_current = null;
 
         if (isset($_POST['spk_number'])) {
@@ -172,14 +167,6 @@ class Order extends CI_Controller
         }
     }
 
-
-    /**
-     * Edit data SPK yang sudah ada di database
-     * 
-     * @param string $spk_number Nomor SPK yang akan diedit
-     * 
-     * @return json object yang berisi status kesuksesan dan nomor surat jalan yang telah diedit
-     */
     public function editSpk()
     {
         $order_ids = $this->input->post('order_ids');
@@ -286,7 +273,6 @@ class Order extends CI_Controller
             echo json_encode(array('success' => true, 'nomor_surat_jalan' => $spk_number));
         }
     }
-
 
     public function spkShow()
     {

@@ -26,7 +26,7 @@ function list_menu()
 function parentMenu()
 {
     $CI = &get_instance();
-    $sql = "SELECT * FROM master_parent_menu order by no asc";
+    $sql = "SELECT * FROM master_parent_menu WHERE is_active = 'Y' order by no asc";
     $query = $CI->db->query($sql);
 
     return $query;

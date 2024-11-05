@@ -1,79 +1,48 @@
 <?php
+defined('BASEPATH') or exit('No direct script access allowed');
+
 class Customer_m extends CI_Model
 {
 
-    var $table = 'master_customer';
-    var $column_order = array(null, 'CardName', 'Address', 'City', 'Phone'); //field yang ada di table cuatomer
-    var $column_search = array('CardName', 'Address', 'City'); //field yang diizin untuk pencarian 
-    var $order = array('CardName' => 'asc'); // default order 
+    private $table = 'customer';
 
-    private function _get_datatables_query()
+    public function get_items($limit, $start, $search = '')
     {
-
-        $this->db->from($this->table);
-        $i = 0;
-
-        foreach ($this->column_search as $item) // looping awal
-        {
-            if ($_POST['search']['value']) // jika datatable mengirimkan pencarian dengan metode POST
-            {
-
-                if ($i === 0) // looping awal
-                {
-                    $this->db->group_start();
-                    $this->db->like($item, $_POST['search']['value']);
-                } else {
-                    $this->db->or_like($item, $_POST['search']['value']);
-                }
-
-                if (count($this->column_search) - 1 == $i)
-                    $this->db->group_end();
-            }
-            $i++;
-        }
-
-        if (isset($_POST['order'])) {
-            $this->db->order_by($this->column_order[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
-        } else if (isset($this->order)) {
-            $order = $this->order;
-            $this->db->order_by(key($order), $order[key($order)]);
-        }
+        $this->db->like('customer', $search);
+        $this->db->or_like('customer_name', $search);
+        $this->db->limit($limit, $start);
+        return $this->db->get($this->table)->result();
     }
 
-    function get_datatables()
+    public function count_items($search = '')
     {
-        $this->_get_datatables_query();
-        if ($_POST['length'] != -1)
-            $this->db->limit($_POST['length'], $_POST['start']);
-        $query = $this->db->get();
-        return $query->result();
+        $this->db->like('customer', $search);
+        $this->db->or_like('customer_name', $search);
+        return $this->db->count_all_results($this->table);
     }
 
-    function count_filtered()
+    public function get_item($id)
     {
-        $this->_get_datatables_query();
-        $query = $this->db->get();
-        return $query->num_rows();
+        return $this->db->get_where($this->table, ['id' => $id])->row();
     }
 
-    public function count_all()
+    public function insert_item($data)
     {
-        $this->db->from($this->table);
-        return $this->db->count_all_results();
+        return $this->db->insert($this->table, $data);
     }
 
-
-    public function simpanCustomer($data)
+    public function update_item($id, $data)
     {
-        // Mendapatkan waktu sekarang
-        date_default_timezone_set('Asia/Jakarta');
-        $created_at = date('Y-m-d H:i:s');
+        return $this->db->where('id', $id)->update($this->table, $data);
+    }
 
-        // Menambahkan kolom 'created_by' dan 'created_at' ke setiap elemen data
-        foreach ($data as &$row) {
-            $row['created_by'] = $this->session->userdata('user_data')['user_id'];
-            $row['created_at'] = $created_at;
-        }
-        return $this->db->insert_batch('master_customer', $data);
+    public function delete_item($id)
+    {
+        return $this->db->where('id', $id)->delete($this->table);
+    }
+
+    public function getAllItem()
+    {
+        return $this->db->get($this->table);
     }
 }

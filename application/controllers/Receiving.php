@@ -6,7 +6,7 @@ class Receiving extends CI_Controller
     function __construct()
     {
         parent::__construct();
-        $this->load->model(['order_m', 'truck_m', 'ekspedisi_m', 'receiving_m']);
+        $this->load->model(['order_m', 'truck_m', 'ekspedisi_m', 'receiving_m', 'trans_m', 'item_m', 'supplier_m']);
         is_not_logged_in();
     }
 
@@ -17,31 +17,51 @@ class Receiving extends CI_Controller
         $this->load->view('template/footer');
     }
 
-
     public function index()
     {
+
+
         $data = array(
-            'title' => 'Create Receiving',
+            'title' => isset($_GET['edit']) && $_GET['ib'] ? 'Receiving ' . $_GET['ib'] : 'Create Receiving',
             'truck' => $this->truck_m->getTruckType(),
             'ekspedisi' => $this->ekspedisi_m->getEkspedisi(),
+            'supplier' => $this->supplier_m->getAllItem(),
             'type' => $this->order_m->getOrderType()
         );
 
-        // if (isset($_GET['edit']) && isset($_GET['spk'])) {
-        //     $spk = $_GET['spk'];
-        //     $order = $this->order_m->getDO($spk);
-        //     if ($order->num_rows() > 0) {
-        //         $data['order'] = $order->row();
-        //     } else {
-        //         echo "Not Found";
-        //         exit;
-        //     }
-        // }
+        if (isset($_GET['edit']) && isset($_GET['ib'])) {
+            $ib_no = $_GET['ib'];
+            $order = $this->receiving_m->getReceive($ib_no);
+            if ($order->num_rows() > 0) {
+                $data['order'] = $order->row();
+            } else {
+                echo "Not Found";
+                exit;
+            }
+        }
+
 
         $this->render('receiving/index', $data);
     }
 
+    public function getItems()
+    {
 
+        $shipment_current = null;
+
+        if (isset($_POST['ib_no'])) {
+            $shipment_current = $this->receiving_m->getReceiveDetail($_POST['ib_no'])->result_array();
+        }
+
+        $listDO = $this->item_m->getAllItem()->result_array();
+
+        $data = array(
+            'shipments' => $listDO,
+            'shipment_current' => $shipment_current
+        );
+
+        echo json_encode($data);
+    }
 
     public function createProccess()
     {
@@ -49,9 +69,26 @@ class Receiving extends CI_Controller
         // var_dump($_SESSION);
         // die;
 
+        if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Item cannot be empty'
+            );
+            echo json_encode($response);
+            exit;
+        }
 
+        $po_number = $this->input->post('header')['poNumber'];
 
-        $this->load->database();
+        $check = $this->db->get_where('receive_header', array('po_number' => $po_number, 'receiving_status' => 'Received'));
+        if ($check->num_rows() > 0) {
+            $response = array(
+                'success' => false,
+                'message' => 'This shipment has already been received (PO : ' . $po_number . ')'
+            );
+            echo json_encode($response);
+            exit;
+        }
 
         // Memulai transaksi
         $this->db->trans_start();
@@ -59,6 +96,9 @@ class Receiving extends CI_Controller
         // Ambil data header dari input POST
         $order_ids = $this->input->post('items');
         $header = $this->input->post('header');
+
+        //get TransID
+        $transID = $this->trans_m->getTransID('Receiving');
 
         // Generate nomor surat jalan dengan format custom SPKASYYMMXXXX
         $prefix = 'IB'; // Awalan tetap
@@ -82,49 +122,77 @@ class Receiving extends CI_Controller
         // Gabungkan prefix, tahun-bulan, dan nomor urut baru
         $nomorSuratJalan = $prefix . $currentYearMonth . $newNumber;
 
-        // Simpan data surat jalan ke database menggunakan raw query
-        $insertHeaderSQL = "INSERT INTO receive_header (receive_number, load_number, receive_date, receive_time, spk_date, ship_mode, order_type, 
-                truck_arival_date, truck_arival_time, start_loading, finish_loading, dispath_proccess, load_status, 
-                transporter, truck_type, truck_no, driver_name, driver_phone, total_cbm, charge_by, remarks, created_by) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $dataInsertHeader = array(
+            'trans_id' => $transID,
+            'receive_number' => $nomorSuratJalan,
+            'ship_reff' => $header['loadNumber'],
+            'po_number' => $header['poNumber'],
+            'sj_number' => $header['SJNumber'],
+            'invoice_number' => $header['invoiceNumber'],
+            'receive_date' => $header['orderDate'],
+            'receive_time' => $header['orderTime'],
+            'unloading_date' => $header['spkDate'],
+            'supplier_id' => $header['supplierID'],
+            'transporter_id' => $header['transporterID'],
+            'truck_type' => $header['truckType'],
+            'receiving_status' => $header['receiveStatus'],
+            'truck_arival_date' => $header['truckArivalDate'],
+            'truck_arival_time' => $header['truckArivalTime'],
+            'start_loading' => $header['startLoading'],
+            'finish_loading' => $header['finishLoading'],
+            'truck_no' => $header['truckNo'],
+            'driver_name' => $header['driverName'],
+            'driver_phone' => $header['driverPhone'],
+            'container_no' => $header['containerNo'],
+            'remarks' => $header['remarks'],
+            'created_by' => $_SESSION['user_data']['username']
+        );
 
-        $this->db->query($insertHeaderSQL, array(
-            $nomorSuratJalan,
-            $header['loadNumber'],
-            $header['orderDate'],
-            $header['orderTime'],
-            $header['spkDate'],
-            $header['shipMode'],
-            $header['orderTypeID'],
-            ($header['truckArivalDate'] == '') ? null : $header['truckArivalDate'],
-            $header['truckArivalTime'],
-            $header['startLoading'],
-            $header['finishLoading'],
-            $header['dispathProccess'],
-            $header['loadStatus'],
-            $header['transporterID'],
-            $header['truckType'],
-            $header['truckNo'],
-            $header['driverName'],
-            $header['driverPhone'],
-            $header['totalCBM'],
-            $header['chargeBy'],
-            $header['remarks'],
-            $_SESSION['user_data']['username']
-        ));
+        // var_dump($dataInsertHeader);
+        // die;
 
+
+        $this->db->insert('receive_header', $dataInsertHeader);
         $last_id = $this->db->insert_id();
 
-        // Insert order ke tabel order_d menggunakan raw query
         foreach ($order_ids as $order_id) {
-            $item_code = $order_id['item_code'];
-            $qty = $order_id['quantity'];
-            $rcv_loc = $order_id['rcv_loc'];
-            $status = $order_id['status'];
-            $insertDetailSQL = "INSERT INTO receive_detail (receive_id, receive_number, item_code, qty, receive_location, status ) VALUES (?, ?, ?, ?, ?, ?)";
-            $this->db->query($insertDetailSQL, array($last_id, $nomorSuratJalan, $item_code, $qty, $rcv_loc, $status));
+            $dataInsertDetail = array(
+                'receive_id' => $last_id,
+                'receive_number' => $nomorSuratJalan,
+                // 'lpn_number' => $this->receiving_m->generate_lpn(),
+                'item_code' => $order_id['item_code'],
+                'qty' => $order_id['quantity'],
+                'receive_location' => $order_id['rcv_loc'],
+                'expiry_date' => $order_id['expiry'],
+                'qa' => $order_id['qa'],
+                'created_by' => $_SESSION['user_data']['username']
+            );
+
+            // var_dump($dataInsertDetail);
+
+            $this->db->insert('receive_detail', $dataInsertDetail);
+
+            $receive_detail_id = $this->db->insert_id();
+            $dataInsertInventory = array(
+                'location' => $order_id['rcv_loc'],
+                'item_code' => $order_id['item_code'],
+                'on_hand' => $order_id['quantity'],
+                'allocated' => 0,
+                'available' => 0,
+                'in_transit' => $order_id['quantity'],
+                'receive_date' => $header['orderDate'],
+                'expiry_date' => $order_id['expiry'],
+                'qa' => $order_id['qa'],
+                'is_pick' => 'N',
+                'receive_id' => $last_id,
+                'receive_detail_id' => $receive_detail_id,
+                'created_by' => $_SESSION['user_data']['username']
+            );
+
+            $this->db->insert('inventory', $dataInsertInventory);
         }
 
+        // die;
         // Menyelesaikan transaksi
         $this->db->trans_complete();
 
@@ -138,20 +206,161 @@ class Receiving extends CI_Controller
         }
     }
 
+    public function editProccess()
+    {
+        // var_dump($_POST);
+        // die;
 
-    public function receivingList() {
+
+        // check input item < 0
+        if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Item cannot be empty'
+            );
+            echo json_encode($response);
+            exit;
+        }
+
+        // check into db if complted
+        $check = $this->db->get_where('receive_header', array('receive_number' => $this->input->post('header')['spkNumber'], 'is_complete' => 'Y'));
+        if ($check->num_rows() > 0) {
+            $response = array(
+                'success' => false,
+                'message' => 'Inbound number already completed.'
+            );
+            echo json_encode($response);
+            exit;
+        }
+
+        $order_ids = $this->input->post('items');
+        $header = $this->input->post('header');
+
+        $spk_number = $header['spkNumber'];
+
+        $this->load->database();
+
+        // Memulai transaksi
+        $this->db->trans_start();
+
+        // Ambil data header dari input POST
+
+        // Periksa apakah `spk_number` ada di database
+        $sqlCheck = "SELECT id FROM receive_header WHERE receive_number = ?";
+        $existingSpk = $this->db->query($sqlCheck, array($spk_number))->row();
+
+
+
+        if (!$existingSpk) {
+            // Jika nomor surat jalan tidak ditemukan
+            echo json_encode(array('success' => false, 'message' => 'Nomor Inbound tidak ditemukan.'));
+            return;
+        }
+
+
+        $spk_id = $existingSpk->id;
+
+        // Update data header
+        $dataUpdateHeader = array(
+            'ship_reff' => $header['loadNumber'],
+            'po_number' => $header['poNumber'],
+            'sj_number' => $header['SJNumber'],
+            'invoice_number' => $header['invoiceNumber'],
+            'receive_date' => $header['orderDate'],
+            'receive_time' => $header['orderTime'],
+            'unloading_date' => $header['spkDate'],
+            'supplier_id' => $header['supplierID'],
+            'transporter_id' => $header['transporterID'],
+            'truck_type' => $header['truckType'],
+            'receiving_status' => $header['receiveStatus'],
+            'truck_arival_date' => $header['truckArivalDate'],
+            'truck_arival_time' => $header['truckArivalTime'],
+            'start_loading' => $header['startLoading'],
+            'finish_loading' => $header['finishLoading'],
+            'truck_no' => $header['truckNo'],
+            'driver_name' => $header['driverName'],
+            'driver_phone' => $header['driverPhone'],
+            'container_no' => $header['containerNo'],
+            'remarks' => $header['remarks'],
+            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_by' => $_SESSION['user_data']['username']
+        );
+
+        $this->db->where('id', $spk_id);
+        $this->db->update('receive_header', $dataUpdateHeader);
+
+        // Delete data detail
+        $this->db->where('receive_id', $spk_id);
+        $this->db->delete('receive_detail');
+
+        // Delete data inventory
+        $this->db->where('receive_id', $spk_id);
+        $this->db->delete('inventory');
+
+        foreach ($order_ids as $order_id) {
+            $dataInsertDetail = array(
+                'receive_id' => $spk_id,
+                'receive_number' => $spk_number,
+                // 'lpn_number' => $order_id['lpn_number'] == 'auto' ? $this->receiving_m->generate_lpn() : $order_id['lpn_number'],
+                'item_code' => $order_id['item_code'],
+                'qty' => $order_id['quantity'],
+                'receive_location' => $order_id['rcv_loc'],
+                'expiry_date' => $order_id['expiry'],
+                'qa' => $order_id['qa'],
+                'created_by' => $_SESSION['user_data']['username']
+            );
+
+            $this->db->insert('receive_detail', $dataInsertDetail);
+
+            $receive_detail_id = $this->db->insert_id();
+            $dataInsertInventory = array(
+                'location' => $order_id['rcv_loc'],
+                'item_code' => $order_id['item_code'],
+                'on_hand' => $order_id['quantity'],
+                'allocated' => 0,
+                'available' => 0,
+                'in_transit' => $order_id['quantity'],
+                'receive_date' => $header['orderDate'],
+                'expiry_date' => $order_id['expiry'],
+                'qa' => $order_id['qa'],
+                'is_pick' => 'N',
+                'receive_id' => $spk_id,
+                'receive_detail_id' => $receive_detail_id,
+                'created_by' => $_SESSION['user_data']['username']
+            );
+
+            $this->db->insert('inventory', $dataInsertInventory);
+        }
+
+        // Menyelesaikan transaksi
+        $this->db->trans_complete();
+
+        // Mengecek apakah transaksi berhasil
+        if ($this->db->trans_status() === FALSE) {
+            // Jika terjadi kesalahan, rollback
+            echo json_encode(array('success' => false, 'message' => 'Transaksi gagal.'));
+        } else {
+            // Kembalikan nomor surat jalan yang telah diedit ke frontend
+            echo json_encode(array('success' => true, 'nomor_surat_jalan' => $spk_number));
+        }
+    }
+
+    public function receivingList()
+    {
         $data = array(
-            'title' => 'Receiving List',
+            'title' => 'Receiving',
             'receive' => $this->receiving_m->receiveList()
         );
         $this->render('receiving/list_receiving/index', $data);
     }
 
-    public function putaway(){
+    public function putaway()
+    {
         $data = array(
             'title' => 'Putaway',
         );
         $this->render('receiving/putaway', $data);
     }
 
+    public function completeReceive() {}
 }
