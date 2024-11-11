@@ -7,12 +7,18 @@
 
 <style>
     .table-hover tbody tr:hover {
-        background-color: #28a745;
+        background-color: yellowgreen;
         /* Warna hijau btn-success */
-        color: #fff;
+        /* color: #fff; */
         /* Warna teks putih agar kontras */
     }
 </style>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.2.2/css/fixedColumns.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/fixedcolumns/4.2.2/js/dataTables.fixedColumns.min.js"></script>
 
 <div class="row">
     <div class="col col-md-12">
@@ -21,13 +27,11 @@
                 <a href="<?= base_url('shipment/index') ?>" class="btn btn-primary btn-sm">Create New</a>
             </div>
             <div class="card-body table-responsive">
-                <div class="mb-3">
-                    <input type="text" id="search" class="form-control-sm" placeholder="Search">
-                </div>
-                <table class="table table-bordered table-sm table-striped table-hover">
-                    <thead class="table-dark">
+                <table class="table table-bordered table-nowrap table-sm table-striped table-hover" id="tableShipment">
+                    <thead>
                         <tr>
                             <th>No.</th>
+                            <th>Action</th>
                             <th>Shipment Number</th>
                             <th>Created Date</th>
                             <th>Customer Name</th>
@@ -38,7 +42,6 @@
                             <th>Total Qty Picked</th>
                             <th>Shipment Status</th>
                             <th>Created by</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="order_data">
@@ -48,8 +51,14 @@
                         ?>
                             <tr>
                                 <td><?= $no++ ?></td>
+                                <td>
+                                    <a href="<?= base_url('shipment/index?edit=true&ob=' . $data->shipment_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
+                                    <?php if ($data->is_complete == 'N') { ?>
+                                        <button class="btn btn-sm btn-success btnComplete fs-12" data-ob-number="<?= $data->shipment_number ?>" title="Click to complete the picking process"><i class="ri-check-fill"></i></button>
+                                    <?php } ?>
+                                </td>
                                 <td><?= $data->shipment_number ?></td>
-                                <td><?= $data->created_at ?></td>
+                                <td><?= $data->created_at == null ? '' : date('Y-m-d', strtotime($data->created_at)) ?></td>
                                 <td><?= $data->customer_name ?></td>
                                 <td><?= $data->city ?></td>
                                 <td><?= $data->trucker_name ?></td>
@@ -58,12 +67,6 @@
                                 <td><?= $data->qty_pick ?></td>
                                 <td><?= $data->is_complete == 'N' ? 'Open' : 'Complete'; ?></td>
                                 <td><?= $data->created_by ?></td>
-                                <td>
-                                    <a href="<?= base_url('shipment/index?edit=true&ob=' . $data->shipment_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
-                                    <?php if ($data->is_complete == 'N') { ?>
-                                        <button class="btn btn-sm btn-success btnComplete fs-12" data-ob-number="<?= $data->shipment_number ?>" title="Click to complete the picking process"><i class="ri-check-fill"></i></button>
-                                    <?php } ?>
-                                </td>
                             </tr>
                         <?php
                         }
@@ -79,6 +82,14 @@
 
 <script>
     $(document).ready(function() {
+
+        $('#tableShipment').DataTable({
+            scrollX: true,
+            fixedColumns: {
+                leftColumns: 4
+            }
+        })
+
         $('.btnComplete').on('click', function() {
             let ob_number = $(this).data('ob-number');
             Swal.fire({

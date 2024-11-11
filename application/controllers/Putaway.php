@@ -29,7 +29,9 @@ class Putaway extends CI_Controller
     public function desktop()
     {
         $data = array(
-            'title' => isset($_GET['edit']) && $_GET['put_no'] ? 'Putaway ' . $_GET['put_no'] : 'Create Putaway',
+            'title' => isset($_GET['edit'])
+                ? (isset($_GET['put_no']) ? (isset($_GET['partial']) ? 'Partial Putaway ' . $_GET['put_no'] : 'Putaway ' . $_GET['put_no']) : 'Create Putaway')
+                : 'Create Putaway',
             'truck' => $this->truck_m->getTruckType(),
             'ekspedisi' => $this->ekspedisi_m->getEkspedisi(),
             'supplier' => $this->supplier_m->getAllItem(),
@@ -39,8 +41,10 @@ class Putaway extends CI_Controller
         if (isset($_GET['edit']) && isset($_GET['put_no'])) {
             $put_no = $_GET['put_no'];
             $order = $this->putaway_m->getPutaway($put_no);
+            $item = $this->putaway_m->getReceivingDetailByPutNo($put_no);
             if ($order->num_rows() > 0) {
                 $data['order'] = $order->row();
+                $data['items'] = $item->result();
             } else {
                 echo "Not Found";
                 exit;
@@ -147,6 +151,63 @@ class Putaway extends CI_Controller
         }
     }
 
+    public function addItem()
+    {
+        $post = $this->input->post();
+        $putaway_number = $post['putaway_number'];
+        $receive_detail_id = $post['receive_detail_id'];
+
+        $this->db->trans_start();
+
+        $item = $this->putaway_m->getReceivingDetailByPutNo($putaway_number, $receive_detail_id)->row();
+        $lpn = $this->lpn_m->generate_lpn($post['receive_detail_id']);
+
+        $dataInsertToPutawayDetail = array(
+            'putaway_id' => $item->putaway_id,
+            'receive_detail_id' => $post['receive_detail_id'],
+            'putaway_number' => $item->putaway_number,
+            'item_code' => $item->item_code,
+            'qty' => $item->qty,
+            'from_location' => $item->receive_location,
+            'to_location' => null,
+            'lpn_id' => $lpn['lpn_id'],
+            'lpn_number' => $lpn['lpn_number'],
+            'is_complete' => 'N',
+            'created_by' => $_SESSION['user_data']['username'],
+            'created_at' => date('Y-m-d H:i:s')
+        );
+
+        $this->db->insert('putaway_detail', $dataInsertToPutawayDetail);
+
+        // get data inserted 
+        $putaway_detail_id = $this->db->insert_id();
+
+        $sql = "SELECT a.*, b.receive_location, b.expiry_date, b.qa, c.item_name, d.receive_date 
+                FROM putaway_detail a
+                INNER JOIN receive_detail b ON a.receive_detail_id = b.id
+                INNER JOIN master_item c ON a.item_code = c.item_code
+                INNER JOIN receive_header d ON b.receive_id = d.id
+                WHERE a.id = ?";
+        $inserted = $this->db->query($sql, array($putaway_detail_id))->row();
+
+
+
+        // var_dump($query->result());
+        // die;
+
+        // Menyelesaikan transaksi
+        $this->db->trans_complete();
+
+        // Mengecek apakah transaksi berhasil
+        if ($this->db->trans_status() === FALSE) {
+            // Jika terjadi kesalahan, rollback
+            echo json_encode(array('success' => false, 'message' => 'Failed to add item.'));
+        } else {
+            // Kembalikan nomor surat jalan ke frontend
+            echo json_encode(array('success' => true, 'putaway_number' => $putaway_number, 'inserted' => $inserted));
+        }
+    }
+
     public function getItems()
     {
 
@@ -172,6 +233,8 @@ class Putaway extends CI_Controller
     public function editProccess()
     {
 
+        // var_dump($_POST['items']);
+        // die;
 
 
         $putaway_number = $this->input->post('header')['putawayNumber'];
@@ -207,12 +270,14 @@ class Putaway extends CI_Controller
         $check = $this->db->get('inventory');
         // balikin dulu kalo ada 
         if ($check->num_rows() > 0) {
-            $putaway_detail = $this->db->get_where('putaway_detail', array('putaway_id' => $putaway_id));
 
-            foreach ($putaway_detail->result() as $row) {
-                $this->db->set('allocated', 'allocated - ' . (float)$row->qty, FALSE);
-                $this->db->set('available', 'available + ' . (float)$row->qty, FALSE);
-                $this->db->where('receive_detail_id', $row->receive_detail_id);
+            $sqla = "SELECT * FROM putaway_detail WHERE putaway_id = ? and to_location is not null";
+            $putaway_detail = $this->db->query($sqla, array($putaway_id));
+
+            foreach ($putaway_detail->result() as $row1) {
+                $this->db->set('allocated', 'allocated - ' . (float)$row1->qty, FALSE);
+                $this->db->set('available', 'available + ' . (float)$row1->qty, FALSE);
+                $this->db->where('receive_detail_id', $row1->receive_detail_id);
                 $this->db->update('inventory');
             }
         }
@@ -225,9 +290,6 @@ class Putaway extends CI_Controller
         // delete inventory before insert
         $this->db->where('putaway_id', $putaway_id);
         $this->db->delete('inventory');
-
-        // var_dump($item);
-        // die;
 
         // insert into putaway detail
         foreach ($item as $i) {
@@ -258,7 +320,7 @@ class Putaway extends CI_Controller
             $this->db->update('inventory');
 
 
-            // insert to inventory
+            // insert putaway location to inventory
             $data_insert_inventory = array(
                 'location' => $i['put_loc'],
                 'item_code' => $i['item_code'],
@@ -299,22 +361,10 @@ class Putaway extends CI_Controller
 
         $receive_number = $header->receive_number;
 
-        // sum qty in receive detail
-        $this->db->select_sum('qty');
-        $this->db->where('receive_number', $receive_number);
-        $total_qty = $this->db->get('receive_detail')->row()->qty;
+        $qtyMacth = $this->checkPutawayAndReceiveIsMatch($putaway_number, $receive_number);
 
-        // sum qty in putaway detail
-        $this->db->select_sum('qty');
-        $this->db->where('putaway_number', $putaway_number);
-        // and to location = '' and to location != null
-        $this->db->where('to_location !=', '');
-        $this->db->where('to_location !=', null);
-        $total_putaway_qty = $this->db->get('putaway_detail')->row()->qty;
-
-
-        if ($total_qty != $total_putaway_qty) {
-            echo json_encode(array('success' => false, 'message' => 'Qty in Putaway Detail != Qty in Receive Detail'));
+        if (!$qtyMacth) {
+            echo json_encode(array('success' => false, 'message' => 'Item putaway and receive is not match'));
             return;
         }
 
@@ -361,6 +411,36 @@ class Putaway extends CI_Controller
         }
     }
 
+    private function checkPutawayAndReceiveIsMatch($putaway_number, $receive_number)
+    {
+        $isMatch = true;
+        $sql = "select * from
+                ((select DISTINCT putaway_id, putaway_number, item_code, SUM(qty) as qty_putaway, receive_detail_id
+                from putaway_detail
+                WHERE putaway_number = ?
+                AND to_location is not null
+                GROUP BY putaway_number, item_code, receive_detail_id, putaway_id)a
+                RIGHT JOIN
+                        (SELECT DISTINCT id, receive_number, item_code, SUM(qty) as qty_receive
+                        FROM receive_detail
+                        WHERE receive_number = ?
+                        GROUP BY receive_number, item_code, id)b on a.receive_detail_id = b.id)";
+        $where = array(
+            $putaway_number,
+            $receive_number
+        );
+
+        $query = $this->db->query($sql, $where);
+        foreach ($query->result() as $row) {
+            if ($row->qty_putaway != $row->qty_receive) {
+                $isMatch = false;
+                break;
+            }
+        }
+
+        return $isMatch;
+    }
+
     public function printPutawaySheet()
     {
 
@@ -375,50 +455,80 @@ class Putaway extends CI_Controller
         $this->load->view('putaway/putaway_sheet', $data);
     }
 
+    public function deleteItem()
+    {
+        $this->db->trans_start();
+
+        $items = $this->input->post('items');
+        $putaway_detail_id = $items['id'];
+        $receive_detail_id = $items['receive_detail_id'];
+        $inventory_put = $this->db->get_where('inventory', array('putaway_detail_id' => $putaway_detail_id));
+
+        // var_dump($inventory_put->result());
+        // die;
+
+        if ($inventory_put->num_rows() > 0) {
+            foreach ($inventory_put->result() as $row) {
+                $this->db->set('allocated', 'allocated - ' . (float)$row->in_transit, FALSE);
+                $this->db->set('available', 'available + ' . (float)$row->in_transit, FALSE);
+                $this->db->where('receive_detail_id', $receive_detail_id);
+                $this->db->update('inventory');
+
+                $this->db->where('putaway_detail_id', $putaway_detail_id);
+                $this->db->delete('inventory');
+            }
+        }
+
+        $this->db->where('id', $putaway_detail_id);
+        $this->db->delete('putaway_detail');
+
+        if ($this->db->affected_rows() > 0) {
+            $this->db->trans_complete();
+            if ($this->db->trans_status() === FALSE) {
+                echo json_encode(array('success' => false, 'message' => 'Transaksi gagal.'));
+            } else {
+                echo json_encode(array('success' => true, 'message' => 'Transaksi sukses.'));
+            }
+        }
+    }
+
     public function partialProccess()
     {
         $post = $this->input->post();
         $items = $post['items'];
-        $partial = true;
-        $location_filled = true;
+        $item_for_partial = array();
 
         foreach ($items as $key => $value) {
             // check partial is checked
-            if ($value['partial'] == 'false') {
-                $partial = false;
-                break;
-            }
-
-            // check location is filled
-            if ($value['put_loc'] == '') {
-                $location_filled = false;
-                break;
-            }
-
-            // check location must 8 digit
-            if (strlen($value['put_loc']) != 8) {
-                $location_filled = false;
-                break;
+            if ($value['partial'] == 'true') {
+                array_push($item_for_partial, $value);
             }
         }
 
-        if (!$partial) {
+        if (count($item_for_partial) < 1) {
             $response = array(
                 'success' => false,
-                'message' => 'Please select at least one item to be partial.'
+                'message' => 'Please select at least one item to be partial'
             );
             echo json_encode($response);
-            return;
+            exit;
         }
 
-        if (!$location_filled) {
-            $response = array(
-                'success' => false,
-                'message' => 'Please fill location for item to be partial, must 8 digit.'
-            );
-            echo json_encode($response);
-            return;
+        foreach ($item_for_partial as $item) {
+            // check location putaway must be 8 character
+            if (strlen($item['put_loc']) != 8) {
+                $response = array(
+                    'success' => false,
+                    'message' => 'Location putaway must be 8 characters'
+                );
+                echo json_encode($response);
+                exit;
+            }
         }
+
+        echo 'Lanjut';
+
+        var_dump($item_for_partial);
 
         var_dump($post);
     }

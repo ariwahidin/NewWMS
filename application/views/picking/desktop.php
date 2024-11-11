@@ -28,7 +28,7 @@
         <a href="<?= base_url('putaway/printPutawaySheet?put_no=' . $order->putaway_number . '&rcv_no=' . $order->receive_number . '&type=print') ?>" class="btn btn-sm btn-info mb-3" target="_blank" rel="noopener noreferrer" title="Print Putaway Sheet"> <i class="ri-printer-fill"></i></a>
         <div class="card mb-3">
             <div class="card-header bg-success">
-                <h5 class="card-title mb-0 text-white">Header Information</h5>
+                <h5 class="card-title mb-0 text-white">Headers Information</h5>
             </div>
             <div class="card-body headerInfo">
                 <form id="formHeader">

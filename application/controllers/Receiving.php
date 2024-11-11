@@ -148,9 +148,6 @@ class Receiving extends CI_Controller
             'created_by' => $_SESSION['user_data']['username']
         );
 
-        // var_dump($dataInsertHeader);
-        // die;
-
 
         $this->db->insert('receive_header', $dataInsertHeader);
         $last_id = $this->db->insert_id();
@@ -168,10 +165,7 @@ class Receiving extends CI_Controller
                 'created_by' => $_SESSION['user_data']['username']
             );
 
-            // var_dump($dataInsertDetail);
-
             $this->db->insert('receive_detail', $dataInsertDetail);
-
             $receive_detail_id = $this->db->insert_id();
             $dataInsertInventory = array(
                 'location' => $order_id['rcv_loc'],
@@ -208,9 +202,6 @@ class Receiving extends CI_Controller
 
     public function editProccess()
     {
-        // var_dump($_POST);
-        // die;
-
 
         // check input item < 0
         if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {

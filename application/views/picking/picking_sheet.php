@@ -57,15 +57,6 @@
         $shipment_number = $picking->shipment_number;
 
         $data = $picking_detail;
-
-        // Contoh data item
-        // $data = [
-        //     ["no" => 1, "location" => "RACK-A01", "item_code" => "ITEM-12345", "lpn_number" => "LPN00001", "quantity" => 10],
-        //     ["no" => 2, "location" => "RACK-B02", "item_code" => "ITEM-67890", "lpn_number" => "LPN00002", "quantity" => 20],
-        //     ["no" => 3, "location" => "RACK-C03", "item_code" => "ITEM-54321", "lpn_number" => "LPN00003", "quantity" => 15],
-        //     ["no" => 4, "location" => "RACK-D04", "item_code" => "ITEM-09876", "lpn_number" => "LPN00004", "quantity" => 25],
-        //     ["no" => 5, "location" => "RACK-E05", "item_code" => "ITEM-13579", "lpn_number" => "LPN00005", "quantity" => 30]
-        // ];
         ?>
 
 

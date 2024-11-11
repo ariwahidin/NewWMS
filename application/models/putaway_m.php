@@ -30,7 +30,7 @@ class Putaway_m extends CI_Model
     public function getPutaway($put_no = null)
     {
         $sql = "SELECT a.*, e.putaway_number, e.created_by as putaway_by,
-                b.id as supplier_id, b.code as supplier_code, b.name as supplier_name,
+                b.id as supplier_id, b.code as supplier_code, b.name as supplier_name, e.is_complete as putaway_status,
                 c.id as transporter_id, 
                 c.code as ekspedisi_code, c.name as ekspedisi_name
                 FROM receive_header a
@@ -128,6 +128,27 @@ class Putaway_m extends CI_Model
                 where a.putaway_number = ? 
                 order by a.receive_detail_id asc";
         $query = $this->db->query($sql, array($putaway_number));
+        return $query;
+    }
+
+    public function getReceivingDetailByPutNo($putaway_number, $receive_detail_id = null)
+    {
+        $sql = "select a.putaway_number, a.id as putaway_id, b.receive_id, b.id as receive_detail_id, b.item_code, c.item_name, b.qty, 
+                b.receive_location, b.lpn_id, b.lpn_number
+                from putaway_header a
+                inner join receive_detail b on a.receive_id = b.receive_id
+                inner join master_item c on b.item_code = c.item_code
+                where putaway_number = ?";
+
+        $where = array();
+        $where[] = $putaway_number;
+        if ($receive_detail_id != null) {
+            $sql .= " and b.id = ?";
+            $where[] = $receive_detail_id;
+        }
+
+        $sql .= " order by b.id asc";
+        $query = $this->db->query($sql, $where);
         return $query;
     }
 }

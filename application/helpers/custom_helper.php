@@ -19,7 +19,8 @@ function is_logged_in()
 function list_menu()
 {
     $CI = &get_instance();
-    $query = $CI->db->get('master_menu');
+    $sql = "SELECT * FROM master_menu ORDER BY id ASC";
+    $query = $CI->db->query($sql);
     return $query;
 }
 
@@ -34,11 +35,9 @@ function parentMenu()
 
 function child_menu($id)
 {
-    $where = array(
-        'parent_id' => $id
-    );
     $CI = &get_instance();
-    $query = $CI->db->get_where('master_menu', $where);
+    $sql = "SELECT * FROM master_menu WHERE parent_id = ? ORDER BY id ASC";
+    $query = $CI->db->query($sql, array($id));
     return $query;
 }
 

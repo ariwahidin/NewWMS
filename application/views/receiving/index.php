@@ -14,8 +14,16 @@
 <div class="row">
     <div class="col-md-12">
         <a href="javascript:history.back()" class="btn btn-primary btn-sm mb-3"><i class="mdi mdi-keyboard-backspace"></i> Back</a>
+
+        <?php if (isset($_GET['edit']) && $order->created_by == $_SESSION['user_data']['username']) { ?>
+            <button type="button" class="btn btn-primary btn-sm mb-3" id="generateSPK" disabled><i class="mdi mdi-content-save"></i> Save</button>
+        <?php } ?>
+
+        <?php if (!isset($_GET['edit'])) { ?>
+            <button type="button" class="btn btn-primary btn-sm mb-3" id="generateSPK" disabled> <i class="mdi mdi-content-save"></i> Save</button>
+        <?php } ?>
         <div class="card mb-3">
-            <div class="card-header bg-primary">
+            <div class="card-header bg-primary d-none">
                 <h5 class="card-title mb-0 text-white">Header Information</h5>
             </div>
             <div class="card-body headerInfo">
@@ -260,14 +268,6 @@
                     <tbody>
                     </tbody>
                 </table>
-
-                <?php if (isset($_GET['edit']) && $order->created_by == $_SESSION['user_data']['username']) { ?>
-                    <button type="button" class="btn btn-primary" id="generateSPK" disabled>Save</button>
-                <?php } ?>
-
-                <?php if (!isset($_GET['edit'])) { ?>
-                    <button type="button" class="btn btn-primary" id="generateSPK" disabled>Save</button>
-                <?php } ?>
             </div>
         </div>
     </div>

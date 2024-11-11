@@ -14,7 +14,6 @@
     <div class="row">
         <div class="col-md-12">
             <div class="alert bg-danger border-danger text-white mb-3 mt-0" role="alert">
-                <!-- alert untuk user yang bukan pembuat tugas ini jadi tidak boleh edit -->
                 <strong>You are not the creator of this task, so you are not allowed to edit it, </strong> the creator is : <b><?= $order->created_by ?></b>
 
             </div>
@@ -26,11 +25,15 @@
     <div class="col-md-12">
         <a href="javascript:history.back()" class="btn btn-primary btn-sm mb-3"><i class="mdi mdi-keyboard-backspace"></i> Back</a>
         <a href="<?= base_url('putaway/printPutawaySheet?put_no=' . $order->putaway_number . '&rcv_no=' . $order->receive_number . '&type=print') ?>" class="btn btn-sm btn-info mb-3" target="_blank" rel="noopener noreferrer" title="Print Putaway Sheet"> <i class="ri-printer-fill"></i></a>
+        <?php if (isset($_GET['edit']) && $order->putaway_by == $_SESSION['user_data']['username'] && $order->putaway_status != 'Y') {
+            if ($order->putaway_status != 'Y') {
+        ?>
+                <button type="button" class="btn btn-primary btn-sm mb-3" id="savePutaway"> <i class="mdi mdi-content-save"></i> Save</button>
+        <?php }
+        } ?>
         <div class="card mb-3">
-            <div class="card-header bg-success">
-                <h5 class="card-title mb-0 text-white">Header Information</h5>
-            </div>
             <div class="card-body headerInfo">
+
                 <form id="formHeader">
                     <div class="row">
                         <div class="col-md-6">
@@ -54,7 +57,7 @@
                                         ?>
                                         <input type="hidden" id="prosesAction" value="<?= $prosesAction ?>">
                                         <input style="max-width: 100px" type="text" class="form-control-sm" id="spkNumber" placeholder="" value="<?= $order->receive_number ?? 'Auto Generated' ?>" readonly>
-                                        <input style="max-width: 80px" type="hidden" class="form-control-sm d-inline" id="status" placeholder="" value="<?= $order->is_complete ?? '' ?>" readonly>
+                                        <input style="max-width: 80px" type="hidden" class="form-control-sm d-inline" id="status" placeholder="" value="<?= $order->putaway_status ?? '' ?>" readonly>
                                     </td>
                                 </tr>
                                 <tr>
@@ -261,6 +264,71 @@
         </div>
     </div>
 
+    <div class="col-md-12 mb-3">
+        <div class="accordion custom-accordionwithicon" id="accordionWithicon">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="accordionwithiconExample1">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#accor_iconExamplecollapse1" aria-expanded="true" aria-controls="accor_iconExamplecollapse1">
+                        Recevied Items Request
+                    </button>
+                </h2>
+                <div id="accor_iconExamplecollapse1" class="accordion-collapse collapse show" aria-labelledby="accordionwithiconExample1" data-bs-parent="#accordionWithicon">
+                    <div class="accordion-body">
+                        <table style="white-space: nowrap; font-size: smaller;" class="table table-bordered table-sm table-striped table-hover" id="">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th>LPN</th>
+                                    <th>Qty (Pcs)</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $totalQty = 0;
+                                foreach ($items as $key => $value) {
+                                    $totalQty += $value->qty;
+                                ?>
+                                    <tr>
+                                        <td><?= $key + 1 ?></td>
+                                        <td><?= $value->item_code ?></td>
+                                        <td><?= $value->item_name ?></td>
+                                        <td><?= $value->lpn_number ?></td>
+                                        <td><?= $value->qty ?></td>
+                                        <td class="text-center">
+                                            <?php
+                                            if ($order->putaway_status != 'Y') {
+                                            ?>
+                                                <button type="button" class="btn btn-primary btn-sm add-item"
+                                                    data-putaway-number="<?= $value->putaway_number ?>"
+                                                    data-receive-id="<?= $value->receive_id ?>"
+                                                    data-receive-detail-id="<?= $value->receive_detail_id ?>">
+                                                    <i class="ri-add-fill"></i>
+                                                </button>
+                                            <?php
+                                            }
+                                            ?>
+                                        </td>
+                                    </tr>
+                                <?php
+                                }
+                                ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4">Total</td>
+                                    <td id="totalQty"><?= $totalQty ?></td>
+                                    <td></td>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="col-md-12">
         <div class="card">
             <div class="card-header bg-default">
@@ -284,17 +352,14 @@
                     </thead>
                     <tbody>
                     </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3"><strong>Total </strong></td>
+                            <td class="text-center"> <strong><span id="totalCartQty"></span></strong> </td>
+                            <td colspan="4"></td>
+                        </tr>
+                    </tfoot>
                 </table>
-                <?php
-                // var_dump($order);
-                ?>
-
-                <?php if (isset($_GET['edit']) && $order->putaway_by == $_SESSION['user_data']['username'] && $order->is_complete == 'Y') { ?>
-
-                    <button type="button" class="btn btn-primary d-inline" id="savePutaway">Save</button>
-
-
-                <?php } ?>
             </div>
         </div>
     </div>
@@ -543,9 +608,13 @@
                     if (prosesAction == 'edit' || prosesAction == 'partial') {
                         selectedOrders = data.putaway_detail;
 
+
+
                         $.each(selectedOrders, function(index, order) {
                             order.item_code = order.item_code;
                         });
+
+                        console.log(selectedOrders);
 
                         updateCartTable();
 
@@ -553,31 +622,12 @@
                             $('#tableShipments input[value="' + order.item_code + '"]').prop('checked', true);
                         })
                     }
+
+                    updateRowNumbers();
                 }
             });
         }
 
-        // Event untuk menambahkan order ke cart
-        $('#tableShipments').on('change', '.order-checkbox', function() {
-            let order = JSON.parse($(this).attr('data-order'));
-
-            if ($(this).is(':checked')) {
-                // Tambahkan ke array selectedOrders
-                selectedOrders.push(order);
-                updateCartTable(order.item_code);
-            } else {
-                // Hapus dari array selectedOrders jika uncheck
-                selectedOrders = selectedOrders.filter(o => o.item_code !== order.item_code);
-                updateCartTable(order.item_code, true);
-            }
-
-            console.log(selectedOrders);
-
-            // Update tabel cart
-
-
-
-        });
 
         $('#searchOrders').on('keyup', function() {
             let value = $(this).val().toLowerCase();
@@ -597,44 +647,41 @@
             }
         });
 
-        $('.btnEkpedisi').on('click', function() {
-            let id = $(this).data('id');
-            let code = $(this).data('code');
-            let name = $(this).data('name');
-            $('#transporterID').val(id);
-            $('#transporter').val(code);
-            $('#transporter_name').val(name);
-            $('#exampleModal').modal('hide');
+
+
+        $('.add-item').on('click', function() {
+            let putaway_number = $(this).data('putaway-number');
+            let receive_id = $(this).data('receive-id');
+            let receive_detail_id = $(this).data('receive-detail-id');
+
+            startLoading();
+
+            $.post('<?= base_url() ?>putaway/addItem', {
+                putaway_number,
+                receive_id,
+                receive_detail_id
+            }, function(response) {
+                stopLoading();
+                if (response.success) {
+                    let cartBody = $('#cartTable tbody');
+                    let row = generateRow(0, response.inserted);
+                    cartBody.append(row);
+                    updateRowNumbers();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: response.message
+                    })
+                }
+            }, 'json');
         })
-
-        $('.btnSupplier').on('click', function() {
-            let id = $(this).data('id');
-            let code = $(this).data('code');
-            let name = $(this).data('name');
-            $('#supplierID').val(id);
-            $('#supplierCode').val(code);
-            $('#supplierName').val(name);
-            $('#exampleModalSupplier').modal('hide');
-        })
-
-        $('.btnType').on('click', function() {
-            let id = $(this).data('id');
-            let code = $(this).data('code');
-            let name = $(this).data('name');
-            $('#orderTypeID').val(id);
-            $('#orderType').val(code);
-            $('#orderTypeName').val(name);
-            $('#modalType').modal('hide');
-        })
-
-
-
 
         // Function untuk mengupdate tampilan tabel cart
         function updateCartTable(item_code_selected = null, uncheck = false) {
             let cartBody = $('#cartTable tbody');
             let prosesAction = $('#prosesAction').val();
-
+            cartBody.html('');
             if (selectedOrders.length > 0) {
 
                 $('#selectedOrdersCount').text(selectedOrders.length); // Update jumlah order
@@ -651,15 +698,12 @@
                     return;
                 }
 
-                if (prosesAction == 'edit') {
-                    // $('#btnPutaway').css('display', 'block');
-                    // $('#btnPutaway').prop('disabled', false);
-                }
 
-                $('#generateSPK').prop('disabled', false); // Aktifkan tombol Generate SPK jika ada order di cart
+                $('#generateSPK').prop('disabled', false);
                 $.each(selectedOrders, function(index, order) {
 
                     let row = generateRow(index, order);
+
 
                     if (item_code_selected != null) {
 
@@ -685,6 +729,7 @@
                 });
 
 
+
             } else {
                 $('#generateSPK').prop('disabled', true); // Nonaktifkan tombol jika cart kosong
                 $('#selectedOrdersCount').text(0); // Reset jumlah order jika tidak ada yang dipilih
@@ -700,8 +745,6 @@
             let expiry = formattedDate;
             let prosesAction = $('#prosesAction').val();
 
-            // console.log(order);
-
             return `
             <tr>
                 <td>${index + 1}</td>
@@ -712,7 +755,7 @@
                     <input type="hidden" class="form-control-sm in-rcv-det-id" value="${order.receive_detail_id ?? ''}">
                     <input type="hidden" class="form-control-sm in-item" value="${order.item_code ?? ''}">
                     <input type="hidden" class="form-control-sm in-item-name" value="${order.item_name ?? ''}">
-                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty ?? '1'}" readonly>
+                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty ?? '1'}">
                 </td>
                 <td>
                     <input type="hidden" class="form-control-sm in-lpn-id" value="${order.lpn_id ?? ''}" readonly>
@@ -728,14 +771,15 @@
                 </td>
                 <td><input style="max-width: 80px;" type="text" class="form-control-sm in-qa" value="A" readonly></td>
                 <td>
+                <?php if ($order->putaway_status != 'Y') { ?>
                     <input type="checkbox" class="form-control-sm in-check-partial ${prosesAction == 'partial' ? 'd-block' : 'd-none'}" value="${order.item_code ?? ''}">
-                    <button type="button" class="btn btn-danger btn-sm remove-order d-none disabled" data-id="${order.item_code ?? ''}"> <i class="ri-close-fill"></i> </button>
+                    <button type="button" class="btn btn-danger btn-sm delete-item" data-order='${JSON.stringify(order)}' data-id="${order.item_code ?? ''}"> <i class="ri-close-fill"></i> </button>
                     <button type="button" class="btn btn-primary btn-sm add-line d-none disabled" data-id="${order.item_code ?? ''}"> <i class="ri-add-fill"></i> </button>
+                <?php } ?>
                 </td>
             </tr>
         `;
         }
-
 
         // Event listener for 'add-line' button to duplicate row
         $('#cartTable').on('click', '.add-line', function() {
@@ -760,16 +804,24 @@
             updateRowNumbers();
         });
 
-        // Event untuk menghapus order dari cart
-        $('#cartTable').on('click', '.remove-order', function() {
-
-            $(this).closest('tr').remove(); // Remove the row
-            updateRowNumbers(); // Update row numbers
-
-            let item_code = $(this).attr('data-id');
-            $(`input[value="${item_code}"]`).prop('checked', false);
-            // updateCartTable(orderId, true);
-
+        $('#cartTable').on('click', '.delete-item', function() {
+            let row = $(this).closest('tr');
+            startLoading();
+            let items = $(this).data('order');
+            $.post('<?php echo site_url('putaway/deleteItem'); ?>', {
+                items: items
+            }, function(response) {
+                stopLoading();
+                if (response.success) {
+                    row.remove();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: response.message
+                    })
+                }
+            }, 'json');
         });
 
 
@@ -778,7 +830,22 @@
             $('#cartTable tbody tr').each(function(index) {
                 $(this).find('td:first').text(index + 1); // Update the index in the first column
             });
+            calculateTotalQtyCart();
         }
+
+        function calculateTotalQtyCart() {
+            let totalQty = 0;
+            $('#cartTable tbody tr').each(function() {
+                totalQty += parseInt($(this).find('.in-qty').val());
+                console.log(totalQty);
+                $('#totalCartQty').text(totalQty);
+            });
+        }
+
+        $('#cartTable').on('keyup', '.in-qty', function() {
+            // console.log('tuing');
+            calculateTotalQtyCart();
+        });
 
         // Saat tombol Generate SPK diklik
         $('#savePutaway').on('click', function() {
@@ -829,15 +896,14 @@
             }
         });
 
-        // $('#btnPutaway').on('click', function() {
-        //     let putaway = true;
-        //     proccess(putaway);
-        // });
-
-
         function proccess(putaway = false) {
-            if (selectedOrders.length > 0) {
-                // startLoading();
+            let itemsDetail = collectCartItems();
+
+            // console.log(itemsDetail);
+            // console.log(selectedOrders);
+
+            if (itemsDetail.length > 0) {
+                startLoading();
                 let orderIds = selectedOrders.map(order => order.shipment_id);
 
                 const dataObj = {};
@@ -851,8 +917,6 @@
                     dataObj[inputId] = inputValue;
                 });
 
-                // console.log(dataObj); // Untuk memeriksa objek hasil
-
                 let suratJalanHeader = {
                     nomor: $('#suratJalanNumber').val(),
                     tanggal: $('#tanggalSuratJalan').val(),
@@ -860,7 +924,6 @@
                     penerima: $('#namaPenerima').val()
                 };
 
-                let itemsDetail = collectCartItems();
                 let prosesAction = $('#prosesAction').val();
 
                 let url = '<?= site_url('putaway/completeProccess') ?>';
@@ -883,42 +946,21 @@
                     },
                     dataType: 'json',
                     success: function(response) {
+                        stopLoading();
                         if (response.success) {
-                            stopLoading();
-                            if (putaway) {
-                                completePutaway();
-                                return;
-                            }
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success',
-                                text: 'Data has been saved successfully!',
+                                text: response.message || 'Data saved successfully',
+                                timer: 1500,
                                 showConfirmButton: false,
-                                showCancelButton: true,
-                                confirmButtonText: 'Print SPK',
-                                cancelButtonText: 'Ok',
-                                customClass: {
-                                    confirmButton: 'btn btn-success me-2',
-                                    cancelButton: 'btn btn-secondary'
-                                },
-                                buttonsStyling: false,
-                                allowOutsideClick: false
-                            }).then((result) => {
-                                selectedOrders = []; // Kosongkan cart
-                                updateCartTable(); // Refresh tampilan cart
-                                $('#tableShipments input[type="checkbox"]').prop('checked', false);
-                                if (result.isConfirmed) {
-                                    $('body').empty();
-                                    // printSpk(response.spk_number);
-                                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                                    if (prosesAction == 'edit') {
-                                        location.reload();
-                                        return;
-                                    }
-                                    $('body').empty();
-                                    window.location.href = 'receivingList';
+                                timerProgressBar: true,
+                                didOpen: () => {
+                                    Swal.showLoading();
                                 }
-                            });
+                            }).then(() => {
+                                getOrder();
+                            })
                         } else {
                             stopLoading();
                             let textWarning = 'Failed to save data';
@@ -934,14 +976,12 @@
             }
         }
 
-
-
-        // Mengumpulkan detail item dari tabel cart saat ingin mengirim
         function collectCartItems() {
             let cartItems = [];
 
             // Iterasi setiap baris di dalam tabel cart
             $('#cartTable tbody tr').each(function() {
+                let id = $(this).find('.in-id').val();
                 let receive_detail_id = $(this).find('.in-rcv-det-id').val();
                 let item_code = $(this).find('.in-item').val();
                 let item_name = $(this).find('.in-item-name').val();
@@ -965,6 +1005,7 @@
                 // Buat objek untuk setiap item
                 if (item_code && quantity) { // Pastikan kedua input tidak kosong
                     cartItems.push({
+                        id: id,
                         receive_detail_id: receive_detail_id,
                         item_code: item_code,
                         item_name: item_name,

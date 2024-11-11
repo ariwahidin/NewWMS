@@ -15,10 +15,7 @@
     <div class="col-md-12 headerInfo">
         <a href="javascript:history.back()" class="btn btn-primary btn-sm mb-3"><i class="mdi mdi-keyboard-backspace"></i> Back</a>
         <a href="<?= base_url('picking/printPickingSheet?pick_no=' . $order->picking_number . '&ship_no=' . $order->shipment_number . '&type=print') ?>" class="btn btn-sm btn-info mb-3" target="_blank" rel="noopener noreferrer" title="Print Picking Sheet"> <i class="ri-printer-fill"></i></a>
-        <div class="card mb-3">
-            <div class="card-header bg-warning">
-                <h5 class="card-title mb-0 text-white">Header Information</h5>
-            </div>
+        <div class="card mb-3"> 
             <div class="card-body">
                 <form id="formHeader">
                     <div class="row">
@@ -238,7 +235,6 @@
     </div>
 
     <div class="col-md-12 mb-3">
-        <!-- Accordions with Icons -->
         <div class="accordion custom-accordionwithicon" id="accordionWithicon">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="accordionwithiconExample1">

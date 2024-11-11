@@ -9,27 +9,16 @@ class Lpn_m extends CI_Model
     }
     public function generate_lpn($receive_detail_id = null)
     {
-        // Dapatkan nomor LPN terakhir berdasarkan urutan tanggal
-        // $last_lpn = $this->get_last_lpn();
 
-        // // Tentukan nomor LPN berikutnya
-        // if ($last_lpn) {
-        //     $last_number = (int)substr($last_lpn->lpn_number, strlen($this->lpn_prefix));
-        //     $new_number = $last_number + 1;
-        // } else {
-        //     $new_number = 1; // Jika belum ada nomor, mulai dari 1
-        // }
+        $lpn_ready = $this->getExistingLPN($receive_detail_id);
+        if ($lpn_ready->num_rows() > 0) {
+            $data_return = array(
+                'lpn_number' => $lpn_ready->row()->lpn_number,
+                'lpn_id' => $lpn_ready->row()->id
+            );
+            return $data_return;
+        }
 
-        // $new_lpn = sprintf('%s%05d', $this->lpn_prefix, $new_number);
-
-        // $insert_data = array(
-        //     'lpn_number' => $new_lpn,
-        //     'receive_detail_id' => $receive_detail_id
-        // );
-
-        // $this->db->insert('lpn', $insert_data);
-
-        // $last_lpn_id = $this->db->insert_id();
 
         // Generate nomor surat jalan dengan format custom SPKASYYMMXXXX
         $prefix = 'LP'; // Awalan tetap
@@ -68,6 +57,17 @@ class Lpn_m extends CI_Model
         );
 
         return $data_return;
+    }
+
+    private function getExistingLPN($receive_detail_id)
+    {
+        $sql = "select TOP 1 * from lpn where receive_detail_id = ?
+                AND id NOT IN(
+                select lpn_id from putaway_detail where receive_detail_id = ?)
+                ORDER BY id ASC";
+        $where = array($receive_detail_id, $receive_detail_id);
+        $query = $this->db->query($sql, $where);
+        return $query;
     }
 
     /**

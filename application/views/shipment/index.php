@@ -15,7 +15,7 @@
     <div class="col-md-12">
         <a href="javascript:history.back()" class="btn btn-primary btn-sm mb-3"><i class="mdi mdi-keyboard-backspace"></i> Back</a>
         <div class="card mb-3">
-            <div class="card-header bg-warning">
+            <div class="card-header bg-warning d-none">
                 <h5 class="card-title mb-0 text-white">Header Information</h5>
             </div>
             <div class="card-body">
