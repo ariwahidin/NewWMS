@@ -17,10 +17,8 @@ class Receiving extends CI_Controller
         $this->load->view('template/footer');
     }
 
-    public function index()
+    public function create()
     {
-
-
         $data = array(
             'title' => isset($_GET['edit']) && $_GET['ib'] ? 'Receiving ' . $_GET['ib'] : 'Create Receiving',
             'truck' => $this->truck_m->getTruckType(),
@@ -39,9 +37,41 @@ class Receiving extends CI_Controller
                 exit;
             }
         }
+        $this->render('receiving/create', $data);
+    }
 
+    public function getUom()
+    {
+        $sql = "SELECT * FROM item_uom ORDER BY converted_qty ASC";
+        $query = $this->db->query($sql);
+        $response = array(
+            'success' => true,
+            'data' => $query->result_array()
+        );
+        echo json_encode($response);
+    }
 
-        $this->render('receiving/index', $data);
+    public function edit()
+    {
+        $data = array(
+            'title' => isset($_GET['edit']) && $_GET['ib'] ? 'Receiving ' . $_GET['ib'] : 'Create Receiving',
+            'truck' => $this->truck_m->getTruckType(),
+            'ekspedisi' => $this->ekspedisi_m->getEkspedisi(),
+            'supplier' => $this->supplier_m->getAllItem(),
+            'type' => $this->order_m->getOrderType()
+        );
+
+        if (isset($_GET['edit']) && isset($_GET['ib'])) {
+            $ib_no = $_GET['ib'];
+            $order = $this->receiving_m->getReceive($ib_no);
+            if ($order->num_rows() > 0) {
+                $data['order'] = $order->row();
+            } else {
+                echo "Not Found";
+                exit;
+            }
+        }
+        $this->render('receiving/create', $data);
     }
 
     public function getItems()
@@ -65,8 +95,8 @@ class Receiving extends CI_Controller
 
     public function createProccess()
     {
+
         // var_dump($_POST);
-        // var_dump($_SESSION);
         // die;
 
         if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
@@ -153,27 +183,42 @@ class Receiving extends CI_Controller
         $last_id = $this->db->insert_id();
 
         foreach ($order_ids as $order_id) {
+
+
+            // Konversi quantity uom to pcs
+            $uoms = explode(',', $order_id['uom']);
+            $uom = $uoms[0];
+            $qty_in = $order_id['quantity'];
+            $qty_uom = (float)$uoms[1];
+            $qty = $qty_in * $qty_uom;
+            $whs_code = $_SESSION['user_data']['warehouse'];
+
             $dataInsertDetail = array(
+                'whs_code' => $whs_code,
                 'receive_id' => $last_id,
                 'receive_number' => $nomorSuratJalan,
-                // 'lpn_number' => $this->receiving_m->generate_lpn(),
                 'item_code' => $order_id['item_code'],
-                'qty' => $order_id['quantity'],
+                'qty_in' => $qty_in,
+                'qty_uom' => $qty_uom,
+                'uom' => $uom,
+                'qty' => $qty,
                 'receive_location' => $order_id['rcv_loc'],
                 'expiry_date' => $order_id['expiry'],
                 'qa' => $order_id['qa'],
                 'created_by' => $_SESSION['user_data']['username']
             );
 
+
             $this->db->insert('receive_detail', $dataInsertDetail);
             $receive_detail_id = $this->db->insert_id();
             $dataInsertInventory = array(
+                'whs_code' => $whs_code,
                 'location' => $order_id['rcv_loc'],
                 'item_code' => $order_id['item_code'],
-                'on_hand' => $order_id['quantity'],
+                'on_hand' => 0,
                 'allocated' => 0,
                 'available' => 0,
-                'in_transit' => $order_id['quantity'],
+                'in_transit' => $qty,
                 'receive_date' => $header['orderDate'],
                 'expiry_date' => $order_id['expiry'],
                 'qa' => $order_id['qa'],
@@ -202,6 +247,9 @@ class Receiving extends CI_Controller
 
     public function editProccess()
     {
+
+        // var_dump($_POST);
+        // die;
 
         // check input item < 0
         if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
@@ -289,12 +337,24 @@ class Receiving extends CI_Controller
         $this->db->delete('inventory');
 
         foreach ($order_ids as $order_id) {
+
+            // Konversi quantity uom to pcs
+            $uoms = explode(',', $order_id['uom']);
+            $uom = $uoms[0];
+            $qty_in = $order_id['quantity'];
+            $qty_uom = (float)$uoms[1];
+            $qty = $qty_in * $qty_uom;
+            $whs_code = $_SESSION['user_data']['warehouse'];
+
             $dataInsertDetail = array(
+                'whs_code' => $whs_code,
                 'receive_id' => $spk_id,
                 'receive_number' => $spk_number,
-                // 'lpn_number' => $order_id['lpn_number'] == 'auto' ? $this->receiving_m->generate_lpn() : $order_id['lpn_number'],
                 'item_code' => $order_id['item_code'],
-                'qty' => $order_id['quantity'],
+                'qty_in' => $qty_in,
+                'qty_uom' => $qty_uom,
+                'uom' => $uom,
+                'qty' => $qty,
                 'receive_location' => $order_id['rcv_loc'],
                 'expiry_date' => $order_id['expiry'],
                 'qa' => $order_id['qa'],
@@ -305,12 +365,13 @@ class Receiving extends CI_Controller
 
             $receive_detail_id = $this->db->insert_id();
             $dataInsertInventory = array(
+                'whs_code' => $whs_code,
                 'location' => $order_id['rcv_loc'],
                 'item_code' => $order_id['item_code'],
-                'on_hand' => $order_id['quantity'],
+                'on_hand' => 0,
                 'allocated' => 0,
                 'available' => 0,
-                'in_transit' => $order_id['quantity'],
+                'in_transit' => $qty,
                 'receive_date' => $header['orderDate'],
                 'expiry_date' => $order_id['expiry'],
                 'qa' => $order_id['qa'],
@@ -338,9 +399,17 @@ class Receiving extends CI_Controller
 
     public function receivingList()
     {
+
+        $isConfirm = null;
+
+        if (isset($_GET['includeConfirm']) && $_GET['includeConfirm'] == 'true') {
+            $isConfirm = true;
+        }
+
+        $receiving = $this->receiving_m->receiveList($isConfirm);
         $data = array(
             'title' => 'Receiving',
-            'receive' => $this->receiving_m->receiveList()
+            'receive' => $receiving
         );
         $this->render('receiving/list_receiving/index', $data);
     }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Putaway Sheet with QR Code</title>
+    <title>Packing Sheet</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
@@ -40,23 +40,19 @@
             display: none;
         }
 
-        /* .text-center {
-            margin-bottom: 20px;
-        } */
     </style>
 </head>
 
 <body onload="print()">
 
-    <!-- <span class="float-end fs-6">Date : <?= date('Y-m-d H:i:s') ?></span> -->
     <div class="container mt-3">
-        <h3 class="text-center ">Picking Sheet</h3>
+        <h3 class="text-center ">Packing Sheet</h3>
         <?php
         // Contoh data header
-        $picking_number = $picking->picking_number;
-        $shipment_number = $picking->shipment_number;
+        $picking_number = $picking->picking_number ?? '';
+        $shipment_number = $picking->shipment_number ?? '';
 
-        $data = $picking_detail;
+        $data = $packing_detail;
         ?>
 
 
@@ -134,34 +130,25 @@
         </div>
 
         <div class="row mb-4 mt-3">
-            <div class="col text-center">
-                <strong>Picking Number:</strong> <?php echo $picking_number; ?><br>
-                <canvas id="qrPutawayNumber" class="qrcode"></canvas>
-            </div>
-            <div class="col text-center">
-                <strong>Shipment Number:</strong> <?php echo $shipment_number; ?><br>
-                <canvas id="qrReceiveNumber" class="qrcode"></canvas>
-            </div>
-        </div>
-
-        <div class="row mb-4 mt-3">
             <div class="col">
                 <table class="table table-bordered" style="font-size: 14px; text-align:left !important;">
                     <thead>
                         <tr>
                             <th>No.</th>
+                            <th>Ctn No.</th>
                             <th>Item Code</th>
                             <th>Item Name</th>
-                            <th>Qty Request</th>
+                            <th>Qty</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php $no = 1;
                         $total_req = 0;
-                        foreach ($shipment_detail->result() as $detail) {
+                        foreach ($packing_detail->result() as $detail) {
                         ?>
                             <tr>
                                 <td><?= $no++ ?></td>
+                                <td><?= $detail->ctn ?></td>
                                 <td><?= $detail->item_code ?></td>
                                 <td><?= $detail->item_name ?></td>
                                 <td><?= $detail->qty ?></td>
@@ -172,7 +159,7 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="3">Total</th>
+                            <th colspan="4">Total</th>
                             <th><?= $total_req ?></th>
                         </tr>
                     </tfoot>
@@ -180,44 +167,6 @@
             </div>
         </div>
 
-
-
-        <table class="table table-sm table-bordered mt-3">
-            <thead>
-                <tr>
-                    <th style="width: 5%;">No.</th>
-                    <th style="width: 20%;">Location</th>
-                    <th style="width: 25%;">Item Code</th>
-                    <th style="width: 25%;">LPN Number</th>
-                    <th style="width: 10%;">Quantity</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php $no = 1; $total_pick = 0;
-                foreach ($data as $item): $no++; ?>
-                    <tr>
-                        <td><?php echo $no; ?></td>
-                        <td>
-                            <canvas id="qrLocation<?php echo $no; ?>" class="qrcode"></canvas>
-                            <?php echo $item['location']; ?>
-                        </td>
-                        <td>
-                            <canvas id="qrItemCode<?php echo $no; ?>" class="qrcode"></canvas>
-                            <?php echo $item['item_code']; ?>
-                        </td>
-                        <td>
-                            <canvas id="qrLpnNumber<?php echo $no; ?>" class="qrcode"></canvas>
-                            <?php echo $item['lpn_number']; ?>
-                        </td>
-                        <td><?php echo $item['qty']; ?></td>
-                    </tr>
-                <?php $total_pick += $item['qty']; endforeach; ?>
-                <tr>
-                    <td colspan="4"><strong>Total</strong></td>
-                    <td><strong><?= $total_pick ?></strong></td>
-                </tr>
-            </tbody>
-        </table>
 
         <div class="print-button">
             <button class="btn btn-primary" onclick="printAndClose()">Print</button>

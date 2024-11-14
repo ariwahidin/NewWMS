@@ -148,6 +148,15 @@
                                             <form id="loginForm">
 
                                                 <div class="mb-3">
+                                                    <label for="username" class="form-label">Warehouse</label>
+                                                    <select name="warehouse" class="form-control" id="warehouse">
+                                                        <?php foreach ($warehouse->result() as $row) : ?>
+                                                            <option value="<?= $row->code ?>"><?= $row->code.' - '.$row->desc ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3">
                                                     <label for="username" class="form-label">Username</label>
                                                     <input type="text" class="form-control" id="username" placeholder="Enter username" autocomplete="off">
                                                 </div>
@@ -159,11 +168,6 @@
                                                         <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon" type="button" id="password-addon"><i class="ri-eye-fill align-middle"></i></button>
                                                     </div>
                                                 </div>
-
-                                                <!-- <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" value="" id="auth-remember-check">
-                                                    <label class="form-check-label" for="auth-remember-check">Remember me</label>
-                                                </div> -->
 
                                                 <div class="mt-4">
                                                     <button id="loginButton" class="btn btn-success w-100" type="submit">Sign In</button>
@@ -245,16 +249,18 @@
         async function loginUser(event) {
             event.preventDefault(); // Mencegah pengiriman form default
 
+            const warehouse = document.getElementById('warehouse').value;
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             // Periksa apakah username atau password kosong sebelum melakukan login
-            if (username.trim() === '' || password.trim() === '') {
-                console.error('Username dan password harus diisi.');
+            if (warehouse.trim() === '' || username.trim() === '' || password.trim() === '') {
+                console.error('All fields must be filled.');
                 return; // Menghentikan fungsi jika ada yang kosong
             }
 
             const data = {
+                warehouse: warehouse,
                 username: username,
                 password: password
             };

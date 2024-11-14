@@ -6,7 +6,7 @@ class Packing extends CI_Controller
     function __construct()
     {
         parent::__construct();
-        $this->load->model(['packing_m']);
+        $this->load->model(['packing_m', 'shipment_m', 'picking_m']);
         is_not_logged_in();
     }
 
@@ -251,6 +251,18 @@ class Packing extends CI_Controller
             'data' => $item->result()
         );
         echo json_encode($response);
+    }
+
+    public function printPackingSheet(){
+        $pack_no = $this->input->get('pack');
+        $ship_no = $this->input->get('ship');
+        $packing_detail = $this->packing_m->getItemPacking($pack_no);
+
+        $data = array(
+            'header' => $this->shipment_m->getShipment($ship_no)->row(),
+            'packing_detail' => $packing_detail
+        );
+        $this->load->view('packing/packing_sheet', $data);
     }
 
 

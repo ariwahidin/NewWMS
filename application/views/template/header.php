@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="<?= ($this->uri->segment(1) == 'order' && $this->uri->segment(2) == 'planningOrder') ? 'sm' : 'lg' ?>" data-sidebar-image="none" data-preloader="disable">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="<?= ($this->uri->segment(1) == 'order' && $this->uri->segment(2) == 'planningOrder') ? 'sm' : 'sm' ?>" data-sidebar-image="none" data-preloader="disable">
 
 <head>
 
@@ -293,7 +293,11 @@ $ws_first_path =  $ws_config->first_path;
                     <div class="d-flex align-items-center">
 
                         <div class="ms-1 header-item d-none d-sm-flex">
-                            <span><strong id="clock"></strong></span>
+                            <?php
+                            $code = $_SESSION['user_data']['warehouse'];
+                            $desc = warehouse($code)->row()->desc;
+                            ?>
+                            <strong><?= $code . ' - ' . $desc ?></strong>
                         </div>
 
                         <div class="ms-1 header-item d-none d-sm-flex">
@@ -376,7 +380,6 @@ $ws_first_path =  $ws_config->first_path;
                         <div class="">
                             <img style="border-radius: 5%; margin-top: 5px;" src="<?= base_url('jar/html/default/') ?>assets/images/Yusen_Logistics_White.png" alt="" height="80">
                             <br>
-                            <!-- <p style="margin-top:-30px !important; color: white; font-size: 25px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;"><strong>YAMVAS</strong></p> -->
                         </div>
                     </span>
                 </a>
@@ -385,7 +388,7 @@ $ws_first_path =  $ws_config->first_path;
                 </button>
             </div>
 
-            <div id="scrollbar">
+            <div id="scrollbar" class="">
                 <div class="container-fluid">
 
                     <div id="two-column-menu">

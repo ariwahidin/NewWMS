@@ -33,6 +33,14 @@ function parentMenu()
     return $query;
 }
 
+function warehouse($code)
+{
+    $CI = &get_instance();
+    $sql = "SELECT * FROM master_warehouse WHERE code = ? ";
+    $query = $CI->db->query($sql, array($code));
+    return $query;
+}
+
 function child_menu($id)
 {
     $CI = &get_instance();

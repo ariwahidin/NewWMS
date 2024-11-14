@@ -1,8 +1,6 @@
 <div class="row">
     <div class="col-md-6 col-sm-12">
-
         <div class="card">
-
             <div class="card-header">
                 <div class="d-flex flex-wrap justify-content-evenly">
                     <p class="text-muted mb-0">
@@ -16,7 +14,6 @@
             <div class="progress animated-progress rounded-bottom rounded-0" style="height: 6px;" id="progressBar">
             </div>
             <div class="card-body table-responsive">
-
                 <form id="packingForm">
                     <table class="table-nowrap table-sm fs-11 mb-0">
                         <tr>

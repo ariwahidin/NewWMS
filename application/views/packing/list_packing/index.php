@@ -50,7 +50,8 @@
                             <tr>
                                 <td><?= $no++ ?></td>
                                 <td>
-                                    <a href="<?= base_url('packing/createNew?pack=' . $data->packing_number . '&ship=' . $data->shipment_number) ?>" class="btn btn-primary btn-sm"><i class="ri-edit-line"></i></a>
+                                    <a href="<?= base_url('packing/createNew?pack=' . $data->packing_number . '&ship=' . $data->shipment_number) ?>" class="btn btn-primary btn-sm" title="Edit"><i class="ri-edit-line"></i></a>
+                                    <a href="<?= base_url('packing/printPackingSheet?pack=' . $data->packing_number . '&ship=' . $data->shipment_number) ?>" class="btn btn-info btn-sm" title="Print Packing Sheet" target="_blank"><i class="ri-printer-line"></i></a>
                                 </td>
                                 <td><?= $data->packing_number ?></td>
                                 <td><?= $data->shipment_number ?></td>

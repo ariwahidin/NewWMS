@@ -122,21 +122,9 @@
         }, 'json');
     }
 
-    // function getDC() {
-    //     let dc = location.pathname.split('/')[1];
-    //     if (dc == 'ymi' || dc == 'yamvas_dc1') {
-    //         dc = 'YAMVAS DC 1';
-    //     } else if (dc == 'yamvas_dc2') {
-    //         dc = 'YAMVAS DC 2';
-    //     } else {
-    //         dc = '';
-    //     }
-    //     document.getElementById('spDC').innerText = dc;
-    // }
-
     // getDC();
     setInterval(keepAlive, 180000);
-    setInterval(updateClock, 1000);
+    // setInterval(updateClock, 1000);
     updateClock();
 </script>
 </body>

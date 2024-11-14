@@ -23,8 +23,18 @@
 <div class="row">
     <div class="col col-md-12">
         <div class="card">
-            <div class="card-header bg-primary d-flex">
-                <a href="<?= base_url('receiving/index') ?>" class="btn btn-success btn-sm">Create New</a>
+            <div class="card-header bg-default d-flex">
+                <a href="<?= base_url('receiving/create') ?>" class="btn btn-success btn-sm">Create New</a>
+                <div class="form-check form-switch form-switch-right form-switch-md ms-3 mt-1">
+                    <label for="default-rangeslider" class="form-label text-muted">Include Confirm Receive</label>
+                    <?php
+                    $checked = '';
+                    if (isset($_GET['includeConfirm']) && $_GET['includeConfirm'] == 'true') {
+                        $checked = 'checked';
+                    }
+                    ?>
+                    <input class="form-check-input" type="checkbox" <?= $checked ?> id="includeConfirm">
+                </div>
             </div>
             <div class="card-body table-responsive">
                 <table style="font-size: 12px;" class="table table-bordered table-nowrap table-sm table-striped table-hover fs-sm" id="receiveTable">
@@ -40,7 +50,7 @@
                             <th>No Truck</th>
                             <th>Total Item</th>
                             <th>Total Qty</th>
-                            <th>Receiving Status</th>
+                            <th>Status</th>
                             <th>Created by</th>
                         </tr>
                     </thead>
@@ -52,7 +62,7 @@
                             <tr>
                                 <td><?= $no++ ?></td>
                                 <td>
-                                    <a href="<?= base_url('receiving/index?edit=true&ib=' . $data->receive_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
+                                    <a href="<?= base_url('receiving/edit?edit=true&ib=' . $data->receive_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
                                     <?php if ($data->is_complete == 'N') { ?>
                                         <!-- if hover describe the fungc -->
                                         <button class="btn btn-sm btn-success btnComplete fs-12" data-rcv-number="<?= $data->receive_number ?>" title="Click to complete the receiving process and proceed to putaway"><i class="ri-check-fill"></i></button>
@@ -66,7 +76,7 @@
                                 <td><?= $data->truck_no ?></td>
                                 <td><?= $data->total_item ?></td>
                                 <td><?= $data->total_qty ?></td>
-                                <td><?= $data->is_complete == 'N' ? 'Open' : 'Complete'; ?></td>
+                                <td><?= $data->is_complete == 'N' ? 'Open' : 'Confirmed'; ?></td>
                                 <td><?= $data->created_by ?></td>
 
                             </tr>
@@ -111,7 +121,7 @@
                     }, function(response) {
                         if (response.success == true) {
                             let put_no = response.putaway_number;
-                            window.location = `<?= site_url('putaway/desktop?edit=true&put_no=') ?>${put_no}`;
+                            window.location = `<?= base_url('putaway/putawayList') ?>`;
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -123,5 +133,14 @@
                 }
             })
         });
+
+
+        $('#includeConfirm').on('change', function() {
+            if ($(this).is(':checked')) {
+                window.location = `<?= base_url('receiving/receivingList?includeConfirm=true') ?>`;
+            } else {
+                window.location = `<?= base_url('receiving/receivingList?includeConfirm=false') ?>`;
+            }
+        })
     })
 </script>

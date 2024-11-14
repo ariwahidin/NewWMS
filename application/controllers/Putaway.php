@@ -19,9 +19,17 @@ class Putaway extends CI_Controller
 
     public function putawayList()
     {
+
+        $isConfirm = null;
+
+        if (isset($_GET['includeConfirm']) && $_GET['includeConfirm'] == 'true') {
+            $isConfirm = true;
+        }
+
+        $putaway = $this->putaway_m->putawayList($isConfirm);
         $data = array(
             'title' => 'Putaway',
-            'receive' => $this->putaway_m->putawayList()
+            'receive' => $putaway
         );
         $this->render('putaway/index', $data);
     }
@@ -57,6 +65,7 @@ class Putaway extends CI_Controller
 
     public function create()
     {
+
         $ib_no = $this->input->post('ib_no');
 
         $receive_h = $this->receiving_m->getReceive($ib_no)->row();
@@ -120,15 +129,18 @@ class Putaway extends CI_Controller
                 'lpn_id' => $lpn['lpn_id'],
                 'lpn_number' => $lpn['lpn_number'],
                 'item_code' => $value->item_code,
+                'qty_in' => $value->qty_in,
+                'qty_uom' => $value->qty_uom,
+                'uom' => $value->uom,
                 'qty' => $value->qty,
                 'from_location' => $value->receive_location,
                 'to_location' => null,
                 'created_by' => $_SESSION['user_data']['username']
             );
             $this->db->insert('putaway_detail', $dataToInsertPutawayDetail);
-            $putaway_detail_id = $this->db->insert_id();
 
             // update inventory
+            $this->db->set('on_hand', 'on_hand + ' . (float)$value->qty, FALSE);
             $this->db->set('in_transit', 'in_transit - ' . (float)$value->qty, FALSE);
             $this->db->set('available', 'available + ' . (float)$value->qty, FALSE);
             $this->db->set('lpn_id', $lpn['lpn_id']);
@@ -154,6 +166,10 @@ class Putaway extends CI_Controller
     public function addItem()
     {
         $post = $this->input->post();
+
+        // var_dump($post);
+        // die;
+
         $putaway_number = $post['putaway_number'];
         $receive_detail_id = $post['receive_detail_id'];
 
@@ -167,6 +183,9 @@ class Putaway extends CI_Controller
             'receive_detail_id' => $post['receive_detail_id'],
             'putaway_number' => $item->putaway_number,
             'item_code' => $item->item_code,
+            'qty_in' => $item->qty_in,
+            'qty_uom' => $item->qty_uom,
+            'uom' => $item->uom,
             'qty' => $item->qty,
             'from_location' => $item->receive_location,
             'to_location' => null,
@@ -189,11 +208,6 @@ class Putaway extends CI_Controller
                 INNER JOIN receive_header d ON b.receive_id = d.id
                 WHERE a.id = ?";
         $inserted = $this->db->query($sql, array($putaway_detail_id))->row();
-
-
-
-        // var_dump($query->result());
-        // die;
 
         // Menyelesaikan transaksi
         $this->db->trans_complete();
@@ -232,10 +246,6 @@ class Putaway extends CI_Controller
 
     public function editProccess()
     {
-
-        // var_dump($_POST['items']);
-        // die;
-
 
         $putaway_number = $this->input->post('header')['putawayNumber'];
         // check if putaway number exist with query builder
@@ -293,13 +303,25 @@ class Putaway extends CI_Controller
 
         // insert into putaway detail
         foreach ($item as $i) {
+
+
+            // Konversi quantity uom to pcs
+            $uom = $i['uom'];
+            $qty_in = (float)$i['quantity'];
+            $qty_uom = (float)$i['qty_uom'];
+            $qty = $qty_in * $qty_uom;
+            $whs_code = $_SESSION['user_data']['warehouse'];
+
             // insert to putaway detail
             $data_insert = array(
                 'putaway_id' => $putaway_id,
                 'receive_detail_id' => $i['receive_detail_id'],
                 'putaway_number' => $putaway_number,
                 'item_code' => $i['item_code'],
-                'qty' => $i['quantity'],
+                'qty_in' => $qty_in,
+                'qty_uom' => $qty_uom,
+                'uom' => $uom,
+                'qty' => $qty,
                 'from_location' => $i['rcv_loc'],
                 'to_location' => $i['put_loc'],
                 'lpn_id' => $i['lpn_id'],
@@ -314,20 +336,21 @@ class Putaway extends CI_Controller
             $putaway_detail_id = $this->db->insert_id();
 
             // update inventory receiving area
-            $this->db->set('allocated', 'allocated + ' . (float)$i['quantity'], FALSE);
-            $this->db->set('available', 'available - ' . (float)$i['quantity'], FALSE);
+            $this->db->set('allocated', 'allocated + ' . (float)$qty, FALSE);
+            $this->db->set('available', 'available - ' . (float)$qty, FALSE);
             $this->db->where('receive_detail_id', $i['receive_detail_id']);
             $this->db->update('inventory');
 
 
             // insert putaway location to inventory
             $data_insert_inventory = array(
+                'whs_code' => $whs_code,
                 'location' => $i['put_loc'],
                 'item_code' => $i['item_code'],
-                'on_hand' => $i['quantity'],
+                'on_hand' => 0,
                 'allocated' => 0,
                 'available' => 0,
-                'in_transit' => $i['quantity'],
+                'in_transit' => $qty,
                 'receive_date' => $i['receive_date'],
                 'expiry_date' => $i['expiry'],
                 'qa' => $i['qa'],
@@ -375,6 +398,7 @@ class Putaway extends CI_Controller
 
         $putaway_detail = $this->db->get_where('putaway_detail', array('putaway_id' => $putaway_id))->result();
         foreach ($putaway_detail as $key => $value) {
+            $this->db->set('on_hand', 'on_hand + ' . (float)$value->qty, FALSE);
             $this->db->set('in_transit', 'in_transit - ' . (float)$value->qty, FALSE);
             $this->db->set('available', 'available + ' . (float)$value->qty, FALSE);
             $this->db->set('lpn_id', $value->lpn_id);

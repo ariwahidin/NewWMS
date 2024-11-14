@@ -99,4 +99,13 @@ class Packing_m extends CI_Model
         $query = $this->db->query($sql);
         return $query;
     }
+
+    public function getItemPacking($packing_number)
+    {
+        $sql = "SELECT a.*, b.item_name FROM packing_detail a 
+                INNER JOIN master_item b on a.item_code = b.item_code
+                WHERE a.packing_number = ?";
+        $query = $this->db->query($sql, array($packing_number));
+        return $query;
+    }
 }

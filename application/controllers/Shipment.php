@@ -29,7 +29,7 @@ class Shipment extends CI_Controller
     public function index()
     {
         $data = array(
-            'title' => isset($_GET['edit']) && $_GET['ob'] ? 'Shipment '.$_GET['ob'] : 'Create Shipment',
+            'title' => isset($_GET['edit']) && $_GET['ob'] ? 'Shipment ' . $_GET['ob'] : 'Create Shipment',
             'truck' => $this->truck_m->getTruckType(),
             'ekspedisi' => $this->ekspedisi_m->getEkspedisi(),
             'customer' => $this->customer_m->getAllItem(),
@@ -97,31 +97,38 @@ class Shipment extends CI_Controller
         }
 
         // check item in inventory is available > requested qty
-        $is_available = true;
+        // $is_available = true;
+        // $whs_code = $_SESSION['user_data']['warehouse'];
+        // foreach ($this->input->post('items') as $item) {
 
-        foreach ($this->input->post('items') as $item) {
-            $qty = $item['quantity'];
-            $item_code = $item['item_code'];
+        //     $uoms = explode(',', $item['uom']);
+        //     $uom = $uoms[0];
+        //     $qty_in = $item['quantity'];
+        //     $qty_uom = (float)$uoms[1];
+        //     $qty = $qty_in * $qty_uom;
 
-            // sum available qty
-            $this->db->select_sum('available');
-            $this->db->where('item_code', $item_code);
-            $this->db->where('is_pick', 'Y');
-            $available = $this->db->get('inventory')->row()->available;
+        //     $item_code = $item['item_code'];
 
-            if ($qty > $available) {
-                $is_available = false;
-                break;
-            }
-        }
-        if (!$is_available) {
-            $response = array(
-                'success' => false,
-                'message' => 'Item Code ' . $item_code . ' is not available'
-            );
-            echo json_encode($response);
-            exit;
-        }
+        //     // sum available qty
+        //     $this->db->select_sum('available');
+        //     $this->db->where('whs_code', $whs_code);
+        //     $this->db->where('item_code', $item_code);
+        //     $this->db->where('is_pick', 'Y');
+        //     $available = $this->db->get('inventory')->row()->available;
+
+        //     if ($qty > $available) {
+        //         $is_available = false;
+        //         break;
+        //     }
+        // }
+        // if (!$is_available) {
+        //     $response = array(
+        //         'success' => false,
+        //         'message' => 'Item Code ' . $item_code . ' is not available'
+        //     );
+        //     echo json_encode($response);
+        //     exit;
+        // }
 
         // Memulai transaksi
         $this->db->trans_start();
@@ -173,11 +180,7 @@ class Shipment extends CI_Controller
 
             'print_do_date' => $header['printDODate'],
             'print_do_time' => $header['printDOTime'],
-
-
-
             'truck_type' => $header['truckType'],
-
             'truck_arival_date' => $header['truckArivalDate'],
             'truck_arival_time' => $header['truckArivalTime'],
 
@@ -192,18 +195,31 @@ class Shipment extends CI_Controller
         $last_id = $this->db->insert_id();
 
         foreach ($order_ids as $order_id) {
+
+            // Konversi quantity uom to pcs
+            $uoms = explode(',', $order_id['uom']);
+            $uom = $uoms[0];
+            $qty_in = $order_id['quantity'];
+            $qty_uom = (float)$uoms[1];
+            $qty = $qty_in * $qty_uom;
+            $whs_code = $_SESSION['user_data']['warehouse'];
+
             $dataInsertDetail = array(
+                'whs_code' => $whs_code,
                 'shipment_id' => $last_id,
                 'shipment_number' => $nomorSuratJalan,
                 'item_code' => $order_id['item_code'],
-                'qty' => $order_id['quantity'],
-                // 'expiry_date' => $order_id['expiry'],
-                // 'qa' => $order_id['qa'],
+                'qty_in' => $qty_in,
+                'qty_uom' => $qty_uom,
+                'uom' => $uom,
+                'qty' => $qty,
                 'created_by' => $_SESSION['user_data']['username']
             );
             $this->db->insert('shipment_detail', $dataInsertDetail);
 
-            $this->getAvailableInventory($dataInsertDetail);
+            // $shipment_detail_id = $this->db->insert_id();
+            // $dataInsertDetail['shipment_detail_id'] = $shipment_detail_id;
+            // $this->getAvailableInventory($dataInsertDetail);
         }
 
         // Menyelesaikan transaksi
@@ -221,6 +237,8 @@ class Shipment extends CI_Controller
 
     private function getAvailableInventory($arrayShipmentDetail)
     {
+        $whs_code = $_SESSION['user_data']['warehouse'];
+        $this->db->where('whs_code', $whs_code);
         $this->db->where('item_code', $arrayShipmentDetail['item_code']);
         $this->db->where('available >', '0');
         $this->db->where('is_pick =', 'Y');
@@ -228,14 +246,17 @@ class Shipment extends CI_Controller
         $query = $this->db->get('inventory');
 
         $qty_request = (float)$arrayShipmentDetail['qty'];
+
         foreach ($query->result() as $row) {
             $qty_pick = $row->available < $qty_request ? $row->available : $qty_request;
+
             $this->allocatedInventory($row, $qty_pick);
             $row->shipment_id = $arrayShipmentDetail['shipment_id'];
+            $row->shipment_detail_id = $arrayShipmentDetail['shipment_detail_id'];
             $row->shipment_number = $arrayShipmentDetail['shipment_number'];
             $row->qty_picking = (float)$qty_pick;
 
-            $this->createPickingDetail($row);
+            $this->createInventoryShipDock($row);
             $qty_request -= $qty_pick;
 
             if ($qty_request == 0) {
@@ -252,8 +273,37 @@ class Shipment extends CI_Controller
         $this->db->update('inventory');
     }
 
+    private function createInventoryShipDock($row)
+    {
+        // var_dump($row);
+        // die;
+        $row_insert = array(
+            'whs_code' => $row->whs_code,
+            'location' => 'SHIPDOCK',
+            'item_code'  => $row->item_code,
+            'on_hand' => 0,
+            'allocated' => 0,
+            'available' => 0,
+            'in_transit' => $row->qty_picking,
+            'receive_date' => $row->receive_date,
+            'expiry_date' => $row->expiry_date,
+            'qa' => $row->qa,
+            'lpn_id' => $row->lpn_id,
+            'lpn_number' => $row->lpn_number,
+            'is_pick' => 'N',
+            'shipment_id' => $row->shipment_id,
+            'shipment_detail_id' => $row->shipment_detail_id,
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $_SESSION['user_data']['username']
+        );
+        $this->db->insert('inventory', $row_insert);
+    }
+
     private function createPickingDetail($row)
     {
+        var_dump($row);
+        die;
+
         $row_insert = array(
             'shipment_id' => $row->shipment_id,
             'shipment_number' => $row->shipment_number,
@@ -269,17 +319,17 @@ class Shipment extends CI_Controller
             'created_at' => date('Y-m-d H:i:s'),
             'created_by' => $_SESSION['user_data']['username']
         );
+
+
         $this->db->insert('picking_detail', $row_insert);
     }
 
     public function editProccess()
     {
+
         // var_dump($_POST);
         // die;
 
-        $this->db->trans_start();
-
-        // check input item < 0
         if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
             $response = array(
                 'success' => false,
@@ -289,9 +339,43 @@ class Shipment extends CI_Controller
             exit;
         }
 
+        // check item in inventory is available > requested qty
+        // $is_available = true;
+        // $whs_code = $_SESSION['user_data']['warehouse'];
+        // foreach ($this->input->post('items') as $item) {
+
+        //     $uoms = explode(',', $item['uom']);
+        //     $uom = $uoms[0];
+        //     $qty_in = $item['quantity'];
+        //     $qty_uom = (float)$uoms[1];
+        //     $qty = $qty_in * $qty_uom;
+        //     $item_code = $item['item_code'];
+
+        //     // sum available qty
+        //     $this->db->select_sum('available');
+        //     $this->db->where('whs_code', $whs_code);
+        //     $this->db->where('item_code', $item_code);
+        //     $this->db->where('is_pick', 'Y');
+        //     $available = $this->db->get('inventory')->row()->available;
+
+        //     if ($qty > $available) {
+        //         $is_available = false;
+        //         break;
+        //     }
+        // }
+        // if (!$is_available) {
+        //     $response = array(
+        //         'success' => false,
+        //         'message' => 'Item Code ' . $item_code . ' is not available'
+        //     );
+        //     echo json_encode($response);
+        //     exit;
+        // }
+
+        $this->db->trans_start();
+
         $order_ids = $this->input->post('items');
         $header = $this->input->post('header');
-
         $shipmentNumber = $this->input->post('header')['shipmentNumber'];
 
         $check = $this->db->get_where('shipment_header', array('shipment_number' => $shipmentNumber));
@@ -305,48 +389,20 @@ class Shipment extends CI_Controller
         }
         $shipment_id = $check->row()->id;
 
-        $old_picking_detail = $this->db->get_where('picking_detail', array('shipment_id' => $shipment_id))->result();
-
-        // var_dump($old_picking_detail);
-        // die;
-
+        // $old_picking_detail = $this->db->get_where('inventory', array('shipment_id' => $shipment_id))->result();
         // unallocate inventory
-        foreach ($old_picking_detail as $detail) {
-            $this->db->where('id', $detail->inventory_id);
-            $this->db->set('allocated', 'allocated - ' . $detail->qty, FALSE);
-            $this->db->set('available', 'available + ' . $detail->qty, FALSE);
-            $this->db->update('inventory');
-        }
+        // foreach ($old_picking_detail as $detail) {
+        //     $this->db->where('lpn_id', $detail->lpn_id);
+        //     $this->db->where('location != ', $detail->location);
+        //     $this->db->where('is_pick', 'N');
+        //     $this->db->set('allocated', 'allocated - ' . $detail->in_transit, FALSE);
+        //     $this->db->set('available', 'available + ' . $detail->in_transit, FALSE);
+        //     $this->db->update('inventory');
+        // }
 
-
-        // check item in inventory is available > requested qty
-        $is_available = true;
-
-        foreach ($this->input->post('items') as $item) {
-            $qty = $item['quantity'];
-            $item_code = $item['item_code'];
-
-            // sum available qty
-            $this->db->select_sum('available');
-            $this->db->where('item_code', $item_code);
-            $this->db->where('is_pick', 'Y');
-            $available = $this->db->get('inventory')->row()->available;
-
-            if ($qty > $available) {
-                $is_available = false;
-                break;
-            }
-        }
-        if (!$is_available) {
-            $response = array(
-                'success' => false,
-                'message' => 'Item Code ' . $item_code . ' is not available'
-            );
-            echo json_encode($response);
-            exit;
-        }
-
-
+        // Delete old shipdock in inventory
+        // $this->db->where('shipment_id', $shipment_id);
+        // $this->db->delete('inventory');
 
         // Update data header
         $dataUpdateHeader = array(
@@ -383,21 +439,44 @@ class Shipment extends CI_Controller
         $this->db->delete('shipment_detail');
 
         // Delete data picking detail
-        $this->db->where('shipment_id', $shipment_id);
-        $this->db->delete('picking_detail');
+        // $this->db->where('shipment_id', $shipment_id);
+        // $this->db->delete('picking_detail');
 
         foreach ($order_ids as $order_id) {
+
+            // $dataInsertDetail = array(
+            //     'shipment_id' => $shipment_id,
+            //     'shipment_number' => $shipmentNumber,
+            //     'item_code' => $order_id['item_code'],
+            //     'qty' => $order_id['quantity'],
+            //     'created_by' => $_SESSION['user_data']['username']
+            // );
+            // $this->db->insert('shipment_detail', $dataInsertDetail);
+
+            // Konversi quantity uom to pcs
+            $uoms = explode(',', $order_id['uom']);
+            $uom = $uoms[0];
+            $qty_in = $order_id['quantity'];
+            $qty_uom = (float)$uoms[1];
+            $qty = $qty_in * $qty_uom;
+            $whs_code = $_SESSION['user_data']['warehouse'];
+
             $dataInsertDetail = array(
-                'shipment_id' => $shipment_id,
+                'whs_code' => $whs_code,
+                'shipment_id' =>  $shipment_id,
                 'shipment_number' => $shipmentNumber,
                 'item_code' => $order_id['item_code'],
-                'qty' => $order_id['quantity'],
-                // 'expiry_date' => $order_id['expiry'],
-                // 'qa' => $order_id['qa'],
+                'qty_in' => $qty_in,
+                'qty_uom' => $qty_uom,
+                'uom' => $uom,
+                'qty' => $qty,
                 'created_by' => $_SESSION['user_data']['username']
             );
             $this->db->insert('shipment_detail', $dataInsertDetail);
-            $this->getAvailableInventory($dataInsertDetail);
+
+            // $shipment_detail_id = $this->db->insert_id();
+            // $dataInsertDetail['shipment_detail_id'] = $shipment_detail_id;
+            // $this->getAvailableInventory($dataInsertDetail);
         }
 
         // Menyelesaikan transaksi
@@ -412,8 +491,4 @@ class Shipment extends CI_Controller
             echo json_encode(array('success' => true, 'message' => 'Shipment has been updated.'));
         }
     }
-
-
-
-
 }

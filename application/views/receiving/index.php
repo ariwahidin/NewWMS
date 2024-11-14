@@ -257,7 +257,7 @@
                             <th>#</th>
                             <th>Item Code</th>
                             <th>Item Name</th>
-                            <th>LPN</th>
+                            <th class="d-none">LPN</th>
                             <th>Qty (Pcs)</th>
                             <th>Receive Location</th>
                             <th>Expiry Date</th>
@@ -441,11 +441,11 @@
 <script>
     $(document).ready(function() {
 
+        let uom = [];
         let existingShipments = [];
         let selectedOrders = [];
 
         getOrder();
-
 
         function makeFieldsReadonly() {
             let status = $('#status').val();
@@ -537,7 +537,18 @@
             });
         }
 
-        // Event untuk menambahkan order ke cart
+        function getUom() {
+            $.ajax({
+                url: '<?= site_url('receiving/getUom') ?>',
+                type: 'POST',
+                dataType: 'json',
+                success: function(response) {
+                    uom = response.data;
+                    console.log(uom);
+                    getOrder();
+                }
+            });
+        }
 
 
         $('#searchOrders').on('keyup', function() {
@@ -639,12 +650,6 @@
             });
 
 
-
-            // if (selectedOrders.length > 0) {
-            // } else {
-            //     $('#generateSPK').prop('disabled', true); // Nonaktifkan tombol jika cart kosong
-            //     $('#selectedOrdersCount').text(0); // Reset jumlah order jika tidak ada yang dipilih
-            // }
         }
 
         function generateRow(index, order = {}) {
@@ -660,14 +665,14 @@
                 <td>${index + 1}</td>
                 <td>${order.item_code ?? ''}</td>
                 <td>${order.item_name ?? ''}</td>
-                <td><input style="max-width: 80px;" type="text" class="form-control-sm in-lpn" value="${order.lpn_number ?? 'auto'}" readonly></td>
+                <td class="d-none" ><input style="max-width: 80px;" type="text" class="form-control-sm in-lpn" value="${order.lpn_number ?? 'auto'}" readonly></td>
                 <td>
                     <input type="hidden" class="form-control-sm in-id" value="${order.id ?? ''}">
                     <input type="hidden" class="form-control-sm in-item" value="${order.item_code ?? ''}">
                     <input type="hidden" class="form-control-sm in-item-name" value="${order.item_name ?? ''}">
                     <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty ?? '1'}">
                 </td>
-                <td><input type="text" class="form-control-sm in-rcv-loc" value="${order.receive_location ?? 'Receiving Area'}" readonly></td>
+                <td><input type="text" class="form-control-sm in-rcv-loc" value="${order.receive_location ?? 'RECVDOCK'}" readonly></td>
                 <td><input type="date" class="form-control-sm in-expiry" value="${order.expiry_date ?? expiry}"></td>
                 <td><input style="max-width: 80px;" type="text" class="form-control-sm in-qa" value="A" readonly></td>
                 <td>
@@ -677,31 +682,6 @@
             </tr>
         `;
         }
-
-
-        // Event listener for 'add-line' button to duplicate row
-        // $('#cartTable').on('click', '.add-line', function() {
-        //     const $currentRow = $(this).closest('tr'); // Get the current row
-        //     const currentIndex = $('#cartTable tbody tr').length;
-
-        //     // Extract data from the current row
-        //     const orderData = {
-        //         item_code: $currentRow.find('.in-item').val(),
-        //         item_name: $currentRow.find('td').eq(2).text(),
-        //         lpn_number: $currentRow.find('.in-lpn').val(),
-        //         qty: $currentRow.find('.in-qty').val(),
-        //         receive_location: $currentRow.find('.in-rcv-loc').val(),
-        //         plan_put_location: $currentRow.find('.in-put-loc').val(),
-        //         status: $currentRow.find('.in-status').val()
-        //     };
-
-        //     // Generate and append the duplicate row
-        //     const newRow = generateRow(currentIndex, orderData);
-        //     $currentRow.after(newRow); // Add the new row directly below the current row
-
-        //     // Update row numbers after appending
-        //     updateRowNumbers();
-        // });
 
 
         $('#tableShipments').on('change', '.order-checkbox', function() {

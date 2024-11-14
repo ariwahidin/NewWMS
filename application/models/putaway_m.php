@@ -1,7 +1,7 @@
 <?php
 class Putaway_m extends CI_Model
 {
-    public function putawayList()
+    public function putawayList($isConfirm = null)
     {
         $sql = "select e.putaway_number, a.receive_number, a.receive_date, a.po_number, d.name as supplier_name, a.truck_no,
                 a.is_complete, e.created_by, e.is_complete as putaway_status,
@@ -21,8 +21,13 @@ class Putaway_m extends CI_Model
 					where b.to_location != '' and b.to_location is not null
                     group by a.receive_number, a.putaway_number
                     ) c on a.receive_number = c.receive_number
-                inner join supplier d on a.supplier_id = d.id
-                ORDER by e.putaway_number desc";
+                inner join supplier d on a.supplier_id = d.id";
+
+        if ($isConfirm == null) {
+            $sql .= " WHERE e.is_complete = 'N'";
+        }
+
+        $sql .= " ORDER by e.putaway_number desc";
         $query = $this->db->query($sql);
         return $query;
     }
@@ -133,12 +138,15 @@ class Putaway_m extends CI_Model
 
     public function getReceivingDetailByPutNo($putaway_number, $receive_detail_id = null)
     {
-        $sql = "select a.putaway_number, a.id as putaway_id, b.receive_id, b.id as receive_detail_id, b.item_code, c.item_name, b.qty, 
-                b.receive_location, b.lpn_id, b.lpn_number
-                from putaway_header a
-                inner join receive_detail b on a.receive_id = b.receive_id
-                inner join master_item c on b.item_code = c.item_code
-                where putaway_number = ?";
+        $sql = "select a.putaway_number, a.id as putaway_id, 
+        b.receive_id, 
+        b.id as receive_detail_id, b.item_code, c.item_name, 
+        b.qty_in, b.qty_uom, b.uom, b.qty,
+        b.receive_location, b.lpn_id, b.lpn_number
+        from putaway_header a
+        inner join receive_detail b on a.receive_id = b.receive_id
+        inner join master_item c on b.item_code = c.item_code
+        where putaway_number = ?";
 
         $where = array();
         $where[] = $putaway_number;

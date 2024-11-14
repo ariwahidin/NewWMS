@@ -24,7 +24,16 @@
     <div class="col col-md-12">
         <div class="card">
             <div class="card-header d-flex">
-                <h5>Putaway List</h5>
+                <div class="form-check form-switch form-switch-right form-switch-md mt-1">
+                    <label for="default-rangeslider" class="form-label text-muted">Include Confirm Putaway</label>
+                    <?php
+                    $checked = '';
+                    if (isset($_GET['includeConfirm']) && $_GET['includeConfirm'] == 'true') {
+                        $checked = 'checked';
+                    }
+                    ?>
+                    <input class="form-check-input" type="checkbox" <?= $checked ?> id="includeConfirm">
+                </div>
             </div>
             <div class="card-body table-responsive">
                 <table class="table table-bordered table-hover table-nowrap table-sm table-striped table-hover" id="tablePutaway">
@@ -40,7 +49,7 @@
                             <th>No Truck</th>
                             <th>Receive Qty</th>
                             <th>Putaway Qty</th>
-                            <th>Putaway Status</th>
+                            <th>Status</th>
                             <th>Created by</th>
                         </tr>
                     </thead>
@@ -56,7 +65,7 @@
                                     <a href="<?= base_url('putaway/printPutawaySheet?put_no=' . $data->putaway_number . '&rcv_no=' . $data->receive_number . '&type=print') ?>" class="btn btn-sm btn-info" target="_blank" rel="noopener noreferrer" title="Print Putaway Sheet"> <i class="ri-printer-fill"></i></a>
 
                                     <?php if ($data->putaway_status == 'N') { ?>
-                                        <button type="button" class="btn btn-sm btn-success d-inline" data-put-number="<?= $data->putaway_number ?>" id="confirmPutaway" title="Confirm Putaway"> <i class="ri-check-double-fill"></i></button>
+                                        <button type="button" class="btn btn-sm btn-success d-inline confirmPutaway" data-put-number="<?= $data->putaway_number ?>" title="Confirm Putaway"> <i class="ri-check-double-fill"></i></button>
                                         <a href="<?= base_url('putaway/desktop?partial=true&edit=true&put_no=' . $data->putaway_number) ?>" class="btn btn-sm btn-warning d-none" title="Partial Putaway"><i class="ri-check-fill"></i></a>
                                     <?php } ?>
                                 </td>
@@ -68,7 +77,7 @@
                                 <td><?= $data->truck_no ?></td>
                                 <td><?= $data->total_qty ?></td>
                                 <td><?= $data->qty_putaway ?></td>
-                                <td><?= $data->putaway_status == 'N' ? 'Pending' : 'Complete'; ?></td>
+                                <td><?= $data->putaway_status == 'N' ? 'Open' : 'Confirmed'; ?></td>
                                 <td><?= $data->created_by ?></td>
 
                             </tr>
@@ -87,6 +96,14 @@
 <script>
     $(document).ready(function() {
 
+        $('#includeConfirm').on('change', function() {
+            if ($(this).is(':checked')) {
+                window.location = `<?= base_url('putaway/putawayList?includeConfirm=true') ?>`;
+            } else {
+                window.location = `<?= base_url('receiving/receivingList?includeConfirm=false') ?>`;
+            }
+        })
+
 
         $('#tablePutaway').DataTable({
             scrollX: true,
@@ -99,39 +116,39 @@
             }]
         });
 
-        $('.btnComplete').on('click', function() {
-            let rcv_number = $(this).data('rcv-number');
+        // $('.btnComplete').on('click', function() {
+        //     let rcv_number = $(this).data('rcv-number');
 
-            Swal.fire({
-                icon: 'question',
-                title: 'Are you sure?',
-                text: 'Do you want to proceed, you cannot undo this action?',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, proceed',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // window.location = `<?= site_url('receiving/complete/') ?>${rcv_number}`;
-                    $.post('<?= site_url('putaway/create') ?>', {
-                        ib_no: rcv_number
-                    }, function(response) {
-                        if (response) {
-                            window.location = `<?= site_url('putaway/desktop?edit=true&ib=') ?>${rcv_number}`;
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Failed',
-                                text: response.message
-                            });
-                        }
-                    }, 'JSON');
-                }
-            })
-        });
+        //     Swal.fire({
+        //         icon: 'question',
+        //         title: 'Are you sure?',
+        //         text: 'Do you want to proceed, you cannot undo this action?',
+        //         showCancelButton: true,
+        //         confirmButtonColor: '#3085d6',
+        //         cancelButtonColor: '#d33',
+        //         confirmButtonText: 'Yes, proceed',
+        //         cancelButtonText: 'Cancel'
+        //     }).then((result) => {
+        //         if (result.isConfirmed) {
+        //             // window.location = `<?= site_url('receiving/complete/') ?>${rcv_number}`;
+        //             $.post('<?= site_url('putaway/create') ?>', {
+        //                 ib_no: rcv_number
+        //             }, function(response) {
+        //                 if (response) {
+        //                     window.location = `<?= site_url('putaway/desktop?edit=true&ib=') ?>${rcv_number}`;
+        //                 } else {
+        //                     Swal.fire({
+        //                         icon: 'error',
+        //                         title: 'Failed',
+        //                         text: response.message
+        //                     });
+        //                 }
+        //             }, 'JSON');
+        //         }
+        //     })
+        // });
 
-        $('#confirmPutaway').on('click', function() {
+        $('.confirmPutaway').on('click', function() {
             let putaway_number = $(this).data('put-number');
             completePutaway(putaway_number);
         });

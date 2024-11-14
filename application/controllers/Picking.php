@@ -57,26 +57,72 @@ class Picking extends CI_Controller
     {
         $post = $this->input->post();
         $shipment_number = $post['ob_no'];
-        $check = $this->db->get_where('shipment_header', array('shipment_number' => $shipment_number));
-        if ($check->num_rows() < 1) {
-            $response = array(
-                'success' => false,
-                'message' => 'Shipment Number ' . $shipment_number . ' not found'
-            );
-            echo json_encode($response);
-            exit;
-        }
-        $shipment_id = $check->row()->id;
-        $picking_detail = $this->db->get_where('picking_detail', array('shipment_id' => $shipment_id));
+        $shipment_header = $this->db->get_where('shipment_header', array('shipment_number' => $shipment_number))->row();
 
-        if ($picking_detail->num_rows() < 1) {
+        if (!$shipment_header) {
             $response = array(
                 'success' => false,
-                'message' => 'Picking detail not found'
+                'message' => 'Shipment not found'
             );
             echo json_encode($response);
             exit;
         }
+
+        if ($shipment_header->is_complete == 'Y') {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment already complete'
+            );
+            echo json_encode($response);
+            exit;
+        }
+
+        $shipment_id = $shipment_header->id;
+
+
+
+        $whs_code = $_SESSION['user_data']['warehouse'];
+        $sql = "SELECT whs_code, item_code, SUM(qty) as qty FROM shipment_detail 
+                WHERE shipment_number = ?
+                AND whs_code = ?
+                GROUP BY whs_code, item_code";
+        $shipment_detail = $this->db->query($sql, array($shipment_number, $whs_code));
+
+        // check item in inventory is available > requested qty
+        foreach ($shipment_detail->result() as $item) {
+
+            $qty = $item->qty;
+            $item_code = $item->item_code;
+
+            // sum available qty
+            $this->db->select_sum('available');
+            $this->db->where('whs_code', $whs_code);
+            $this->db->where('item_code', $item_code);
+            $this->db->where('is_pick', 'Y');
+            $available = $this->db->get('inventory')->row()->available;
+
+            if ($available == null) {
+                $response = array(
+                    'success' => false,
+                    'message' => 'Item Code ' . $item_code . ' is not available'
+                );
+                echo json_encode($response);
+                exit;
+            }
+
+            if ($qty > $available) {
+                $response = array(
+                    'success' => false,
+                    'message' => 'Stock ' . $item_code . ' is not enough'
+                );
+                echo json_encode($response);
+                exit;
+            }
+        }
+
+        // echo "Success";
+        // exit;
+
 
         $this->db->trans_start();
 
@@ -104,8 +150,6 @@ class Picking extends CI_Controller
         // Gabungkan prefix, tahun-bulan, dan nomor urut baru
         $picking_number = $prefix . $currentYearMonth . $newNumber;
 
-
-
         $dataPickingHeader = array(
             'trans_id' => $transID,
             'picking_number' => $picking_number,
@@ -120,13 +164,14 @@ class Picking extends CI_Controller
         $picking_id = $this->db->insert_id();
 
 
-        $dataUpdatePicking = array(
-            'picking_id' => $picking_id,
-            'picking_number' => $picking_number,
-        );
+        $shipment_details = $this->db->get_where('shipment_detail', array('shipment_number' => $shipment_number))->result_array();
 
-        $this->db->where('shipment_id', $shipment_id);
-        $this->db->update('picking_detail', $dataUpdatePicking);
+        foreach ($shipment_details as $row_shipment_detail) {
+            $row_shipment_detail['picking_id'] = $picking_id;
+            $row_shipment_detail['picking_number'] = $picking_number;
+            $this->getAvailableInventory($row_shipment_detail);
+        }
+
 
 
         $dataUpdateShipmentHeader = array(
@@ -155,9 +200,125 @@ class Picking extends CI_Controller
         }
     }
 
+
+
+    private function getAvailableInventory($row_shipment_detail)
+    {
+
+        // var_dump($row_shipment_detail);
+        // die;
+
+
+        $shipment_id = $row_shipment_detail['shipment_id'];
+        $shipment_number = $row_shipment_detail['shipment_number'];
+        $shipment_detail_id = $row_shipment_detail['id'];
+        $picking_id = $row_shipment_detail['picking_id'];
+        $picking_number = $row_shipment_detail['picking_number'];
+
+        $item_code = $row_shipment_detail['item_code'];
+
+        $whs_code = $_SESSION['user_data']['warehouse'];
+        $this->db->where('whs_code', $whs_code);
+        $this->db->where('item_code', $item_code);
+        $this->db->where('available >', '0');
+        $this->db->where('is_pick =', 'Y');
+        $this->db->order_by('receive_date', 'asc');
+        $query = $this->db->get('inventory');
+
+        $qty_request = (float)$row_shipment_detail['qty'];
+
+        foreach ($query->result() as $row) {
+            $qty_pick = $row->available < $qty_request ? $row->available : $qty_request;
+            $row->shipment_id =  $shipment_id;
+            $row->shipment_detail_id = $shipment_detail_id;
+            $row->shipment_number = $shipment_number;
+            $row->qty_picking = (float)$qty_pick;
+            $row->picking_id = $picking_id;
+            $row->picking_number = $picking_number;
+
+            $this->allocatedInventory($row, $qty_pick);
+            $this->createPickingDetail($row);
+
+            $qty_request -= $qty_pick;
+            if ($qty_request == 0) {
+                break;
+            }
+        }
+    }
+
+    private function createPickingDetail($row)
+    {
+        $row_insert = array(
+            'picking_id' => $row->picking_id,
+            'picking_number' => $row->picking_number,
+            'shipment_id' => $row->shipment_id,
+            'shipment_number' => $row->shipment_number,
+            'inventory_id' => $row->id,
+            'location' => $row->location,
+            'lpn_id' => $row->lpn_id,
+            'lpn_number' => $row->lpn_number,
+            'item_code'  => $row->item_code,
+            'qty' => $row->qty_picking,
+            'expiry_date' => $row->expiry_date,
+            'qa' => $row->qa,
+            'receive_date' => $row->receive_date,
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $_SESSION['user_data']['username']
+        );
+
+        $this->db->insert('picking_detail', $row_insert);
+
+        $row->picking_detail_id = $this->db->insert_id();
+        $this->createInventoryShipDock($row);
+    }
+
+
+    private function allocatedInventory($row, $qty_pick)
+    {
+
+        $this->db->where('id', $row->id);
+        $this->db->set('allocated', 'allocated + ' . $qty_pick, FALSE);
+        $this->db->set('available', 'available - ' . $qty_pick, FALSE);
+        $this->db->update('inventory');
+    }
+
+
+    private function createInventoryShipDock($row)
+    {
+        $row_insert = array(
+            'whs_code' => $row->whs_code,
+            'location' => 'SHIPDOCK',
+            'item_code'  => $row->item_code,
+            'on_hand' => 0,
+            'allocated' => 0,
+            'available' => 0,
+            'in_transit' => $row->qty_picking,
+            'receive_date' => $row->receive_date,
+            'expiry_date' => $row->expiry_date,
+            'qa' => $row->qa,
+            'lpn_id' => $row->lpn_id,
+            'lpn_number' => $row->lpn_number,
+            'is_pick' => 'N',
+            'shipment_id' => $row->shipment_id,
+            'shipment_detail_id' => $row->shipment_detail_id,
+            'picking_id' => $row->picking_id,
+            'picking_detail_id' => $row->picking_detail_id,
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $_SESSION['user_data']['username']
+        );
+        $this->db->insert('inventory', $row_insert);
+    }
+
+
+
+
     public function completePicking()
     {
         $post = $this->input->post();
+
+        // var_dump($post);
+        // die;
+
         $pick_no = $post['pick_no'];
         $picking = $this->db->get_where('picking_header', array('picking_number' => $pick_no));
 
@@ -180,6 +341,17 @@ class Picking extends CI_Controller
         }
 
         $picking_id = $picking->row()->id;
+        $picking_detail = $this->db->get_where('picking_detail', array('picking_id' => $picking_id));
+
+        if ($picking_detail->num_rows() < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Picking Number ' . $pick_no . ' not found'
+            );
+            echo json_encode($response);
+            exit;
+        }
+
 
         $this->db->trans_start();
         $data = array(
@@ -190,11 +362,22 @@ class Picking extends CI_Controller
         $this->db->where('id', $picking_id);
         $this->db->update('picking_header', $data);
 
-        $picking_detail = $this->db->get_where('picking_detail', array('picking_id' => $picking_id));
+        // var_dump($picking_detail->result());
+        // die;
+
         foreach ($picking_detail->result() as $row) {
             $this->db->where('id', $row->inventory_id);
             $this->db->set('allocated', 'allocated - ' . $row->qty, FALSE);
             $this->db->set('on_hand', 'on_hand - ' . $row->qty, FALSE);
+            $this->db->update('inventory');
+        }
+
+        foreach ($picking_detail->result() as $row1) {
+            $this->db->where('picking_id', $row1->picking_id);
+            $this->db->where('picking_detail_id', $row1->id);
+            $this->db->set('in_transit', 'in_transit - ' . $row1->qty, FALSE);
+            $this->db->set('available', 'available + ' . $row1->qty, FALSE);
+            $this->db->set('on_hand', 'on_hand + ' . $row1->qty, FALSE);
             $this->db->update('inventory');
         }
 
@@ -219,9 +402,6 @@ class Picking extends CI_Controller
 
     public function getItems()
     {
-
-        // var_dump($_POST);
-        // die;
         $shipment_current = null;
 
         if (isset($_POST['ob_no'])) {

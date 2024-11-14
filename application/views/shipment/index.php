@@ -242,7 +242,8 @@
                             <th>#</th>
                             <th>Item Code</th>
                             <th>Item Name</th>
-                            <th>Qty (Pcs)</th>
+                            <th>Qty</th>
+                            <th>UoM</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -443,11 +444,11 @@
 <script>
     $(document).ready(function() {
 
+        let uom = [];
         let existingShipments = [];
         let selectedOrders = [];
 
-        getOrder();
-
+        getUom();
 
         function makeFieldsReadonly() {
             let status = $('#status').val();
@@ -524,6 +525,18 @@
             });
         }
 
+        function getUom() {
+            $.ajax({
+                url: '<?= site_url('receiving/getUom') ?>',
+                type: 'POST',
+                dataType: 'json',
+                success: function(response) {
+                    uom = response.data;
+                    getOrder();
+                }
+            });
+        }
+
         // Event untuk menambahkan order ke cart
         $('#tableShipments').on('change', '.order-checkbox', function() {
             let order = JSON.parse($(this).attr('data-order'));
@@ -537,12 +550,6 @@
                 selectedOrders = selectedOrders.filter(o => o.item_code !== order.item_code);
                 updateCartTable(order.item_code, true);
             }
-
-            console.log(selectedOrders);
-
-            // Update tabel cart
-
-
 
         });
 
@@ -598,9 +605,6 @@
             $('#modalType').modal('hide');
         })
 
-
-
-
         // Function untuk mengupdate tampilan tabel cart
         function updateCartTable(item_code_selected = null, uncheck = false) {
             let cartBody = $('#cartTable tbody');
@@ -623,8 +627,6 @@
                 }
 
                 if (prosesAction == 'edit') {
-                    // $('#btnPutaway').css('display', 'block');
-                    // $('#btnPutaway').prop('disabled', false);
                 }
 
                 $('#generateSPK').prop('disabled', false); // Aktifkan tombol Generate SPK jika ada order di cart
@@ -664,11 +666,32 @@
 
         function generateRow(index, order = {}) {
 
+
+
             const today = new Date();
             const nextYear = new Date(today.setFullYear(today.getFullYear() + 1));
             const formattedDate = nextYear.toISOString().split('T')[0];
 
             let expiry = formattedDate;
+
+            let optionUom = '';
+
+            $.each(uom, function(index, value) {
+
+                let optionSelected = '';
+
+                if (order.base_uom != null && order.base_uom == value.uom) {
+                    optionSelected = 'selected'
+                }
+
+                if (order.uom != null && order.uom == value.uom) {
+                    optionSelected = 'selected'
+                }
+
+                if (order.item_code == value.item_code) {
+                    optionUom += `<option value="${value.uom+","+value.converted_qty}" ${optionSelected}>${value.uom}</option>`;
+                }
+            }); 
 
             return `
             <tr>
@@ -679,7 +702,12 @@
                     <input type="hidden" class="form-control-sm in-id" value="${order.id ?? ''}">
                     <input type="hidden" class="form-control-sm in-item" value="${order.item_code ?? ''}">
                     <input type="hidden" class="form-control-sm in-item-name" value="${order.item_name ?? ''}">
-                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty ?? '1'}">
+                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty_in ?? '1'}">
+                </td>
+                <td>
+                    <select class="form-select-sm in-uom">
+                        ${optionUom}
+                    </select>
                 </td>
                 <td>
                     <button type="button" class="btn btn-danger btn-sm remove-order" data-id="${order.item_code ?? ''}"> <i class="ri-close-fill"></i> </button>
@@ -688,7 +716,6 @@
             </tr>
         `;
         }
-
 
         // Event listener for 'add-line' button to duplicate row
         $('#cartTable').on('click', '.add-line', function() {
@@ -782,11 +809,6 @@
 
             }
         });
-
-        // $('#btnPutaway').on('click', function() {
-        //     let putaway = true;
-        //     proccess(putaway);
-        // });
 
 
         function proccess(putaway = false) {
@@ -904,9 +926,6 @@
             }
         }
 
-
-
-
         // Mengumpulkan detail item dari tabel cart saat ingin mengirim
         function collectCartItems() {
             let cartItems = [];
@@ -922,6 +941,7 @@
                 let status = $(this).find('.in-status').val();
                 let expiry = $(this).find('.in-expiry').val();
                 let qa = $(this).find('.in-qa').val();
+                let uom = $(this).find('.in-uom').val();
 
                 // Buat objek untuk setiap item
                 if (item_code && quantity) { // Pastikan kedua input tidak kosong
@@ -934,7 +954,8 @@
                         put_loc: put_location,
                         status: status,
                         expiry: expiry,
-                        qa: qa
+                        qa: qa,
+                        uom: uom,
                     });
                 }
             });

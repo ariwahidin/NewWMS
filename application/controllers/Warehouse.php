@@ -1,12 +1,12 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Item extends CI_Controller
+class Warehouse extends CI_Controller
 {
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('item_m');
+        $this->load->model('warehouse_m');
         is_not_logged_in();
     }
 
@@ -21,9 +21,9 @@ class Item extends CI_Controller
     public function index()
     {
         $data = array(
-            'title' => 'MASTER ITEM',
+            'title' => 'MASTER WAREHOUSE',
         );
-        $this->render('master/item/index', $data);
+        $this->render('master/warehouse/index', $data);
     }
 
     public function fetch_data()
@@ -32,13 +32,13 @@ class Item extends CI_Controller
         $start = $this->input->post('start');
         $search = $this->input->post('search')['value'];
 
-        $data = $this->item_m->get_items($limit, $start, $search);
-        $totalData = $this->item_m->count_items();
+        $data = $this->warehouse_m->get_items($limit, $start, $search);
+        $totalData = $this->warehouse_m->count_items();
 
         $output = [
             "draw" => intval($this->input->post('draw')),
             "recordsTotal" => intval($totalData),
-            "recordsFiltered" => intval($this->item_m->count_items($search)),
+            "recordsFiltered" => intval($this->warehouse_m->count_items($search)),
             "data" => $data
         ];
         echo json_encode($output);
@@ -47,27 +47,31 @@ class Item extends CI_Controller
     public function create()
     {
         $data = array(
-            'title' => 'ADD NEW ITEM',
+            'title' => 'ADD NEW WAREHOUSE',
         );
-        $this->render('master/item/create', $data);
+        $this->render('master/warehouse/create', $data);
     }
 
     public function store()
     {
+
         $data = [
-            'item_code' => $this->input->post('item_code'),
-            'item_name' => $this->input->post('item_name')
+            'code' => $this->input->post('code'),
+            'desc' => $this->input->post('desc'),
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $this->session->userdata('user_data')['username']
         ];
-        $this->item_m->insert_item($data);
-        redirect('item/index');
+        $this->warehouse_m->insert_item($data);
+
+        redirect('warehouse/index');
     }
 
     public function edit($id)
     {
         echo "Permission Denied";
         exit;
-        $data['item'] = $this->item_m->get_item($id);
-        $this->load->view('master_item/edit', $data);
+        $data['item'] = $this->warehouse_m->get_item($id);
+        $this->load->view('warehouse/edit', $data);
     }
 
     public function update($id)
@@ -78,7 +82,7 @@ class Item extends CI_Controller
             'item_code' => $this->input->post('item_code'),
             'item_name' => $this->input->post('item_name')
         ];
-        $this->item_m->update_item($id, $data);
+        $this->warehouse_m->update_item($id, $data);
         redirect('master_item');
     }
 
@@ -86,7 +90,7 @@ class Item extends CI_Controller
     {
         echo "Permission Denied";
         exit;
-        $this->item_m->delete_item($id);
+        $this->warehouse_m->delete_item($id);
         redirect('master_item');
     }
 }
