@@ -1,13 +1,34 @@
 <?php
 class Shipment_m extends CI_Model
 {
-    /**
-     * Get shipment data
-     *
-     * @param int $id shipment id (optional)
-     * @return object or array
-     */
-    public function getShipment($shipment_number = null)
+
+    public function getShipmentNumber()
+    {
+        // Generate nomor surat jalan dengan format custom SPKASYYMMXXXX
+        $prefix = 'OB'; // Awalan tetap
+        $currentYearMonth = date('ym'); // Format tahun dan bulan, misalnya 2410 untuk Oktober 2024
+
+        // Mencari nomor urut terakhir dari bulan ini
+        $sql = "SELECT TOP 1 shipment_number FROM shipment_header 
+                            WHERE shipment_number LIKE ? 
+                            ORDER BY shipment_number DESC";
+        $lastEntry = $this->db->query($sql, array($prefix . $currentYearMonth . '%'))->row();
+
+        if ($lastEntry) {
+            // Ambil 4 digit terakhir dari nomor surat jalan terakhir
+            $lastNumber = (int)substr($lastEntry->shipment_number, -4);
+            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT); // Tambahkan 1 dan format dengan 4 digit
+        } else {
+            // Jika belum ada nomor surat jalan bulan ini, mulai dari 0001
+            $newNumber = '0001';
+        }
+
+        // Gabungkan prefix, tahun-bulan, dan nomor urut baru
+        $nomorSuratJalan = $prefix . $currentYearMonth . $newNumber;
+        return $nomorSuratJalan;
+    }
+
+    public function getShipment($shipment_number = null, $is_confirm = null)
     {
         $sql = "select a.id, a.shipment_number, a.created_at, b.customer_name, b.ship_to_city as city,
                 c.name as trucker_name, a.is_complete, isnull(d.total_item, 0) as total_item, isnull(d.total_qty_req, 0) as total_qty_req, isnull(e.qty_pick, 0) as qty_pick,
@@ -25,10 +46,20 @@ class Shipment_m extends CI_Model
                 left join(
                             select shipment_id, sum(qty) as qty_pick from picking_detail
                             group by shipment_id
-                        )e on a.id = e.shipment_id";
+                        )e on a.id = e.shipment_id
+                WHERE a.is_cross_docking = 'N'";
         $where = array();
+
+        $isConfrim = "";
+        
+        if ( $shipment_number == null && $is_confirm == null) {
+            $isConfrim = " AND a.is_complete = 'N'";
+        }
+
+        $sql .= $isConfrim;
+
         if ($shipment_number != null) {
-            $sql .= " WHERE a.shipment_number = ?";
+            $sql .= " AND a.shipment_number = ?";
             $where[] = $shipment_number;
         }
 

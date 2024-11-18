@@ -23,10 +23,10 @@
 <div class="row">
     <div class="col col-md-12">
         <div class="card">
-            <div class="card-header d-flex">
-                <a href="<?= base_url('shipment/index') ?>" class="btn btn-primary btn-sm">Create New</a>
+            <div class="card-header bg-default d-flex">
+                <a href="<?= base_url('crossdock/create') ?>" class="btn btn-success btn-sm">Create New</a>
                 <div class="form-check form-switch form-switch-right form-switch-md ms-3 mt-1">
-                    <label for="default-rangeslider" class="form-label text-muted">Include Confirm Shipment</label>
+                    <label for="default-rangeslider" class="form-label text-muted">Include Confirm Receive</label>
                     <?php
                     $checked = '';
                     if (isset($_GET['includeConfirm']) && $_GET['includeConfirm'] == 'true') {
@@ -37,46 +37,48 @@
                 </div>
             </div>
             <div class="card-body table-responsive">
-                <table class="table table-bordered table-nowrap table-sm table-striped table-hover" id="tableShipment">
+                <table style="font-size: 12px;" class="table table-bordered table-nowrap table-sm table-striped table-hover fs-sm" id="receiveTable">
                     <thead>
                         <tr>
                             <th>No.</th>
                             <th>Action</th>
-                            <th>Shipment Number</th>
-                            <th>Created Date</th>
-                            <th>Customer Name</th>
-                            <th>City</th>
+                            <th>Rcv No.</th>
+                            <th>Ship No.</th>
+                            <th>DO No.</th>
+                            <th>Supplier</th>
+                            <th>Customer</th>
                             <th>Trucker</th>
-                            <th>Item</th>
-                            <th>Qty Request</th>
-                            <th>Qty Picked</th>
-                            <th>Shipment Status</th>
+                            <th>Total Item</th>
+                            <th>Total Qty</th>
+                            <th>Status</th>
                             <th>Created by</th>
                         </tr>
                     </thead>
                     <tbody id="order_data">
                         <?php
                         $no = 1;
-                        foreach ($shipment->result() as $data) {
+                        foreach ($receive->result() as $data) {
                         ?>
                             <tr>
                                 <td><?= $no++ ?></td>
                                 <td>
-                                    <a href="<?= base_url('shipment/index?edit=true&ob=' . $data->shipment_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
+                                    <a href="<?= base_url('receiving/edit?edit=true&ib=' . $data->receive_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
                                     <?php if ($data->is_complete == 'N') { ?>
-                                        <button class="btn btn-sm btn-success btnComplete fs-12" data-ob-number="<?= $data->shipment_number ?>" title="Click to complete the picking process"><i class="ri-check-fill"></i></button>
+                                        <!-- if hover describe the fungc -->
+                                        <button class="btn btn-sm btn-success btnComplete fs-12" data-rcv-number="<?= $data->receive_number ?>" title="Click to complete the receiving process and proceed to putaway"><i class="ri-check-fill"></i></button>
                                     <?php } ?>
                                 </td>
-                                <td><?= $data->shipment_number ?></td>
-                                <td><?= $data->created_at == null ? '' : date('Y-m-d', strtotime($data->created_at)) ?></td>
-                                <td><?= $data->customer_name ?></td>
-                                <td><?= $data->city ?></td>
-                                <td><?= $data->trucker_name ?></td>
+                                <td> <a href="<?= base_url('receiving/index?edit=true&ib=' . $data->receive_number) ?>"><?= $data->receive_number ?></a></td>
+                                <td><?= $data->receive_date ?></td>
+                                <td><?= $data->po_number ?></td>
+                                <td><?= $data->supplier_name ?></td>
+                                <td><?= $data->ekspedisi_name ?></td>
+                                <td><?= $data->truck_no ?></td>
                                 <td><?= $data->total_item ?></td>
-                                <td><?= $data->total_qty_req ?></td>
-                                <td><?= $data->qty_pick ?></td>
-                                <td><?= $data->is_complete == 'N' ? 'Open' : 'Complete'; ?></td>
+                                <td><?= $data->total_qty ?></td>
+                                <td><?= $data->is_complete == 'N' ? 'Open' : 'Confirmed'; ?></td>
                                 <td><?= $data->created_by ?></td>
+
                             </tr>
                         <?php
                         }
@@ -93,23 +95,16 @@
 <script>
     $(document).ready(function() {
 
-        $('#tableShipment').DataTable({
+        $('#receiveTable').DataTable({
             scrollX: true,
             fixedColumns: {
-                leftColumns: 4
+                leftColumns: 3 // Mengunci 3 kolom pertama
             }
-        })
-
-        $('#includeConfirm').on('change', function() {
-            if ($(this).is(':checked')) {
-                window.location = `<?= base_url('shipment/list?includeConfirm=true') ?>`;
-            } else {
-                window.location = `<?= base_url('shipment/list?includeConfirm=false') ?>`;
-            }
-        })
+        });
 
         $('.btnComplete').on('click', function() {
-            let ob_number = $(this).data('ob-number');
+            let rcv_number = $(this).data('rcv-number');
+
             Swal.fire({
                 icon: 'question',
                 title: 'Are you sure?',
@@ -121,23 +116,12 @@
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    $.post('<?= site_url('picking/create') ?>', {
-                        ob_no: ob_number
+                    $.post('<?= site_url('putaway/create') ?>', {
+                        ib_no: rcv_number
                     }, function(response) {
                         if (response.success == true) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                timer: 1500,
-                                showConfirmButton: false,
-                                timerProgressBar: true,
-                                didOpen: () => {
-                                    Swal.showLoading()
-                                },
-                                text: response.message
-                            }).then(() => {
-                                window.location = `<?= base_url('picking/list') ?>`;
-                            })
+                            let put_no = response.putaway_number;
+                            window.location = `<?= base_url('putaway/putawayList') ?>`;
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -149,5 +133,14 @@
                 }
             })
         });
+
+
+        $('#includeConfirm').on('change', function() {
+            if ($(this).is(':checked')) {
+                window.location = `<?= base_url('crossdock/index?includeConfirm=true') ?>`;
+            } else {
+                window.location = `<?= base_url('crossdock/index?includeConfirm=false') ?>`;
+            }
+        })
     })
 </script>

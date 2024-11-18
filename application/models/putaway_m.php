@@ -142,7 +142,7 @@ class Putaway_m extends CI_Model
         b.receive_id, 
         b.id as receive_detail_id, b.item_code, c.item_name, 
         b.qty_in, b.qty_uom, b.uom, b.qty,
-        b.receive_location, b.lpn_id, b.lpn_number
+        b.receive_location
         from putaway_header a
         inner join receive_detail b on a.receive_id = b.receive_id
         inner join master_item c on b.item_code = c.item_code

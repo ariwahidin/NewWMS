@@ -1,5 +1,5 @@
 <?php
-class Receiving_m extends CI_Model
+class Crossdock_m extends CI_Model
 {
 
     public function getReceiveNumber()
@@ -29,7 +29,7 @@ class Receiving_m extends CI_Model
         return $nomorSuratJalan;
     }
 
-    public function receiveList($includeComplete = null)
+    public function list($includeComplete = null)
     {
         $sql = "select a.id, a.receive_number, a.receive_date, c.putaway_number, a.po_number, d.name as supplier_name, a.truck_no,
                 a.is_complete, a.created_by, e.name as ekspedisi_name, f.total_item,
@@ -55,7 +55,7 @@ class Receiving_m extends CI_Model
                     (SELECT DISTINCT receive_id, item_code FROM receive_detail)s
                     GROUP BY receive_id
                     )f on a.id = f.receive_id
-                WHERE a.is_cross_docking = 'N'";
+                WHERE a.is_cross_docking = 'Y'";
 
         if ($includeComplete == null) {
             $sql .= " AND a.is_complete = 'N'";

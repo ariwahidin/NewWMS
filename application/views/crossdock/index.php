@@ -40,11 +40,11 @@
                                         <input style="max-width: 80px" type="hidden" class="form-control-sm d-inline" id="status" placeholder="" value="<?= $order->is_complete ?? '' ?>" readonly>
                                     </td>
                                 </tr>
-                                <tr class="d-none">
+                                <tr>
                                     <td>DO/ASN</td>
                                     <td>:</td>
                                     <td>
-                                        <input type="text" class="form-control-sm required-input" id="loadNumber" placeholder="" value="<?= $order->ship_reff ?? 'SYSTEM' ?>" required>
+                                        <input type="text" class="form-control-sm required-input" id="loadNumber" placeholder="" value="<?= $order->ship_reff ?? '' ?>" required>
                                     </td>
                                 </tr>
                                 <tr>
@@ -56,7 +56,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>INV No.</td>
+                                    <td>Invoice No.</td>
                                     <td>:</td>
                                     <td>
                                         <?php $invoiceNumber = $order->invoice_number ?? ''; ?>
@@ -248,7 +248,7 @@
         <div class="card headerInfo">
             <div class="card-header bg-default">
                 <strong>Total Selected Items: <span id="selectedOrdersCount">0</span></strong>
-                <button type="button" class="btn btn-sm bg-primary float-end text-white" data-bs-toggle="modal" data-bs-target="#modalAvailableOrder">List Item</button>
+                <button type="button" class="btn-sm bg-warning float-end" data-bs-toggle="modal" data-bs-target="#modalAvailableOrder">List Item</button>
             </div>
             <div class="card-body table-responsive">
                 <table style="white-space: nowrap; font-size: smaller;" class="table table-bordered table-sm table-striped" id="cartTable">
@@ -258,8 +258,7 @@
                             <th>Item Code</th>
                             <th>Item Name</th>
                             <th class="d-none">LPN</th>
-                            <th>Qty</th>
-                            <th>UoM</th>
+                            <th>Qty (Pcs)</th>
                             <th>Receive Location</th>
                             <th>Expiry Date</th>
                             <th>QA</th>
@@ -268,13 +267,6 @@
                     </thead>
                     <tbody>
                     </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3">Total</td>
-                            <td><strong id="totalQty"></strong></td>
-                            <td colspan="5"></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
         </div>
@@ -418,7 +410,8 @@
             </div>
             <div class="modal-body table-responsive">
 
-                <input type="text" id="searchOrders" class="form-control-sm" placeholder="Search Item Code">
+                <input type="text" id="searchOrders" class="form-control-sm" placeholder="Search Order">
+                <!-- <button class="btn-small float-end" id="btnRefresh">Refresh</button>y -->
                 <br>
                 <br>
                 <div style="max-height: 360px;">
@@ -449,14 +442,22 @@
     $(document).ready(function() {
 
         let uom = [];
-        let selectedOrders = [];
         let existingShipments = [];
+        let selectedOrders = [];
 
-        getUom();
+        getOrder();
 
         function makeFieldsReadonly() {
             let status = $('#status').val();
             if (status == 'Y') {
+                // document.querySelectorAll('input, select, button').forEach(element => {
+                //     element.readOnly = true; // Untuk input
+                //     element.disabled = true; // Untuk select
+                // });
+
+                // document.querySelectorAll('button').forEach(element => {
+                //     element.style.display = 'none';
+                // });
 
                 document.querySelectorAll('.headerInfo').forEach(container => {
                     // Set input dan select di dalam .headerInfo menjadi readonly atau disabled
@@ -475,22 +476,32 @@
 
         function getOrder() {
 
+
             let dataToPost = {};
+
             let prosesAction = $('#prosesAction').val();
+
             if (prosesAction == 'edit') {
                 dataToPost.ib_no = $('#spkNumber').val();
             }
 
             $.ajax({
-                url: '<?= site_url('receiving/getItems') ?>',
+                url: '<?= site_url('receiving/getItems') ?>', // URL ke function di controller
                 type: 'POST',
                 data: dataToPost,
                 dataType: 'json',
                 success: function(data) {
                     let tableBody = $('#tableShipments tbody');
+
+                    // Iterasi setiap data yang diterima dari server
                     let totalData = parseInt($('#totalDo').text());
                     $.each(data.shipments, function(index, order) {
+
+
+
+                        // Cek apakah shipment_id sudah ada dalam tabel
                         if (!existingShipments.includes(order.shipment_id)) {
+                            // Jika belum ada, tambahkan baris baru
                             let row = `<tr>
                                             <td style="align-content:center; text-align:center;">
                                                 <input type="checkbox" class="order-checkbox" value="${order.item_code}" data-order='${JSON.stringify(order)}'/>
@@ -499,9 +510,9 @@
                                             <td>${order.item_name}</td>
                                         </tr>`;
 
-                            tableBody.append(row);
-                            existingShipments.push(order.item_code);
-                            totalData += 1;
+                            tableBody.append(row); // Tambahkan baris ke tabel
+                            existingShipments.push(order.item_code); // Tambahkan ID ke daftar existingShipments
+                            totalData += 1; // Update jumlah data
                             $('#totalDo').text(totalData);
                         }
                         stopLoading();
@@ -526,7 +537,6 @@
             });
         }
 
-
         function getUom() {
             $.ajax({
                 url: '<?= site_url('receiving/getUom') ?>',
@@ -534,6 +544,7 @@
                 dataType: 'json',
                 success: function(response) {
                     uom = response.data;
+                    console.log(uom);
                     getOrder();
                 }
             });
@@ -589,6 +600,8 @@
         })
 
 
+
+
         // Function untuk mengupdate tampilan tabel cart
         function updateCartTable(item_code_selected = null, uncheck = false) {
             let cartBody = $('#cartTable tbody');
@@ -636,7 +649,7 @@
 
             });
 
-            calculateTotalQtyCart();
+
         }
 
         function generateRow(index, order = {}) {
@@ -646,24 +659,6 @@
             const formattedDate = nextYear.toISOString().split('T')[0];
 
             let expiry = formattedDate;
-            let optionUom = '';
-
-            $.each(uom, function(index, value) {
-
-                let optionSelected = '';
-
-                if (order.base_uom != null && order.base_uom == value.uom) {
-                    optionSelected = 'selected'
-                }
-
-                if (order.uom != null && order.uom == value.uom) {
-                    optionSelected = 'selected'
-                }
-
-                if (order.item_code == value.item_code) {
-                    optionUom += `<option value="${value.uom+","+value.converted_qty}" ${optionSelected}>${value.uom}</option>`;
-                }
-            });
 
             return `
             <tr>
@@ -675,12 +670,7 @@
                     <input type="hidden" class="form-control-sm in-id" value="${order.id ?? ''}">
                     <input type="hidden" class="form-control-sm in-item" value="${order.item_code ?? ''}">
                     <input type="hidden" class="form-control-sm in-item-name" value="${order.item_name ?? ''}">
-                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty_in ?? '1'}">
-                </td>
-                <td>
-                    <select class="form-select-sm in-uom">
-                        ${optionUom}
-                    </select>
+                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty ?? '1'}">
                 </td>
                 <td><input type="text" class="form-control-sm in-rcv-loc" value="${order.receive_location ?? 'RECVDOCK'}" readonly></td>
                 <td><input type="date" class="form-control-sm in-expiry" value="${order.expiry_date ?? expiry}"></td>
@@ -697,13 +687,16 @@
         $('#tableShipments').on('change', '.order-checkbox', function() {
             let order = JSON.parse($(this).attr('data-order'));
             if ($(this).is(':checked')) {
+                // Tambahkan ke array selectedOrders
                 selectedOrders.push(order);
                 updateCartTable(order.item_code);
             } else {
+                // Hapus dari array selectedOrders jika uncheck
                 selectedOrders = selectedOrders.filter(o => o.item_code !== order.item_code);
                 updateCartTable(order.item_code, true);
             }
             updateRowNumbers();
+            console.log(selectedOrders);
         });
 
         // Event untuk menghapus order dari cart
@@ -771,6 +764,11 @@
 
             }
         });
+
+        // $('#btnPutaway').on('click', function() {
+        //     let putaway = true;
+        //     proccess(putaway);
+        // });
 
 
         function proccess(putaway = false) {
@@ -895,6 +893,10 @@
             }
         }
 
+
+
+
+        // Mengumpulkan detail item dari tabel cart saat ingin mengirim
         function collectCartItems() {
             let cartItems = [];
 
@@ -903,7 +905,6 @@
                 let item_code = $(this).find('.in-item').val();
                 let item_name = $(this).find('.in-item-name').val();
                 let lpn = $(this).find('.in-lpn').val();
-                let uom = $(this).find('.in-uom').val();
                 let quantity = $(this).find('.in-qty').val();
                 let location = $(this).find('.in-rcv-loc').val();
                 let put_location = $(this).find('.in-put-loc').val();
@@ -917,7 +918,6 @@
                         item_code: item_code,
                         item_name: item_name,
                         lpn_number: lpn,
-                        uom: uom,
                         quantity: parseInt(quantity), // Pastikan quantity adalah integer
                         rcv_loc: location,
                         put_loc: put_location,
@@ -929,19 +929,6 @@
             });
 
             return cartItems; // Kembalikan array yang berisi objek item
-        }
-
-        $('#cartTable').on('keyup', '.in-qty', function() {
-            calculateTotalQtyCart();
-        });
-
-        function calculateTotalQtyCart() {
-            let totalQty = 0;
-            $('#cartTable tbody tr').each(function() {
-                totalQty += parseInt($(this).find('.in-qty').val());
-                console.log(totalQty);
-                $('#totalQty').text(totalQty);
-            });
         }
     });
 </script>

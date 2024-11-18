@@ -42,14 +42,14 @@
                         <tr>
                             <th>No.</th>
                             <th>Action</th>
-                            <th>Receiving Number</th>
-                            <th>Receiving Date</th>
+                            <th>Rcv No.</th>
+                            <th>Rcv Date</th>
                             <th>PO Number</th>
                             <th>Supplier</th>
                             <th>Trucker</th>
                             <th>No Truck</th>
-                            <th>Total Item</th>
-                            <th>Total Qty</th>
+                            <th>Item</th>
+                            <th>Qty</th>
                             <th>Status</th>
                             <th>Created by</th>
                         </tr>
@@ -96,10 +96,10 @@
     $(document).ready(function() {
 
         $('#receiveTable').DataTable({
-            scrollX: true,
-            fixedColumns: {
-                leftColumns: 3 // Mengunci 3 kolom pertama
-            }
+            // scrollX: true,
+            // fixedColumns: {
+            //     leftColumns: 3 // Mengunci 3 kolom pertama
+            // }
         });
 
         $('.btnComplete').on('click', function() {

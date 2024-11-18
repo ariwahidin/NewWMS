@@ -77,7 +77,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Doc No.</td>
+                                    <td>DO No.</td>
                                     <td>:</td>
                                     <td>
                                         <input type="text" class="form-control-sm required-input" id="shipReff" placeholder="" value="<?= $order->ship_reff ?? '' ?>" required>

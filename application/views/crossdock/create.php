@@ -3,7 +3,6 @@
     <div class="row">
         <div class="col-md-12">
             <div class="alert bg-danger border-danger text-white mb-3 mt-0" role="alert">
-                <!-- alert untuk user yang bukan pembuat tugas ini jadi tidak boleh edit -->
                 <strong>You are not the creator of this task, so you are not allowed to edit it, </strong> the creator is : <b><?= $order->created_by ?></b>
 
             </div>
@@ -12,6 +11,18 @@
 <?php } ?>
 
 <div class="row">
+
+
+
+
+
+
+
+
+
+
+
+
     <div class="col-md-12">
         <a href="javascript:history.back()" class="btn btn-primary btn-sm mb-3"><i class="mdi mdi-keyboard-backspace"></i> Back</a>
 
@@ -23,11 +34,11 @@
             <button type="button" class="btn btn-primary btn-sm mb-3" id="generateSPK" disabled> <i class="mdi mdi-content-save"></i> Save</button>
         <?php } ?>
         <div class="card mb-3">
-            <div class="card-header bg-primary d-none">
-                <h5 class="card-title mb-0 text-white">Header Information</h5>
+            <div class="card-header bg-default">
+                <h5 class="card-title mb-0">Receive Information</h5>
             </div>
-            <div class="card-body headerInfo">
-                <form id="formHeader">
+            <div class="card-body headerInfoReceive">
+                <form id="formHeaderReceive">
                     <div class="row">
                         <div class="col-md-6">
                             <table>
@@ -36,15 +47,15 @@
                                     <td>:</td>
                                     <td>
                                         <input type="hidden" id="prosesAction" value="<?= (isset($order)) && $order->receive_number ? 'edit' : 'add'; ?>">
-                                        <input style="max-width: 100px" type="text" class="form-control-sm" id="spkNumber" placeholder="" value="<?= $order->receive_number ?? 'Auto Generated' ?>" readonly>
+                                        <input style="max-width: 100px" type="text" class="form-control-sm" id="receiveNumber" placeholder="" value="<?= $order->receive_number ?? 'Auto Generated' ?>" readonly>
                                         <input style="max-width: 80px" type="hidden" class="form-control-sm d-inline" id="status" placeholder="" value="<?= $order->is_complete ?? '' ?>" readonly>
                                     </td>
                                 </tr>
-                                <tr class="d-none">
+                                <tr>
                                     <td>DO/ASN</td>
                                     <td>:</td>
                                     <td>
-                                        <input type="text" class="form-control-sm required-input" id="loadNumber" placeholder="" value="<?= $order->ship_reff ?? 'SYSTEM' ?>" required>
+                                        <input type="text" class="form-control-sm required-input" id="loadNumber" placeholder="" value="<?= $order->ship_reff ?? '' ?>" required>
                                     </td>
                                 </tr>
                                 <tr>
@@ -56,7 +67,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>INV No.</td>
+                                    <td>Invoice No.</td>
                                     <td>:</td>
                                     <td>
                                         <?php $invoiceNumber = $order->invoice_number ?? ''; ?>
@@ -244,11 +255,263 @@
         </div>
     </div>
 
+
+
+    <div class="col-md-12">
+        <div class="card mb-3">
+            <div class="card-header bg-default">
+                <h5 class="card-title mb-0">Shipment Information</h5>
+            </div>
+            <div class="card-body">
+                <form id="formHeaderShipment">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table>
+                                <tr>
+                                    <td>Shipment Number</td>
+                                    <td>:</td>
+                                    <td>
+                                        <input style="max-width: 100px" type="text" class="form-control-sm" id="shipmentNumber" placeholder="" value="<?= $order->shipment_number ?? 'Auto Generated' ?>" readonly>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Shipment Date</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php
+                                        $orderDate = $order->shipment_date ?? date('Y-m-d');
+                                        $orderTime = isset($order) ? ($order->shipment_date ? date('H:i', strtotime($order->shipment_date)) : '') : '';
+                                        ?>
+                                        <input type="date" class="form-control-sm" id="shipmentDate" value="<?= $orderDate ?>" required>
+                                        <input type="time" class="form-control-sm" id="shipmentTime" value="<?= $orderTime ?>" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Start/Finish Loading</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php
+                                        $startLoading = isset($order->start_loading) ? date('H:i', strtotime($order->start_loading)) : '';
+                                        $finishLoading = isset($order->finish_loading) ? date('H:i', strtotime($order->finish_loading)) : '';
+                                        ?>
+                                        <input type="time" class="form-control-sm" id="startLoadingShipment" placeholder="" value="<?= $startLoading ?>" required>
+                                        <input type="time" class="form-control-sm" id="finishLoadingShipment" placeholder="" value="<?= $finishLoading ?>" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Ship Request Date</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php
+                                        $shipRequestDate = $order->ship_request_date ?? date('Y-m-d');
+                                        ?>
+                                        <input type="date" class="form-control-sm" id="shipRequestDate" value="<?= $shipRequestDate ?>" placeholder="" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>SJ No.</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php $SJNumber = $order->sj_number ?? ''; ?>
+                                        <input type="text" class="form-control-sm required-input" id="sjNumberShipment" placeholder="" value="<?= $SJNumber ?>" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Doc No.</td>
+                                    <td>:</td>
+                                    <td>
+                                        <input type="text" class="form-control-sm required-input" id="shipReff" placeholder="" value="<?= $order->ship_reff ?? '' ?>" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Print DO Date</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php
+                                        $printDODate = $order->print_do_date ?? date('Y-m-d');
+                                        $printDOTime = isset($order->print_do_time) ? date('H:i', strtotime($order->print_do_time)) : '';
+                                        ?>
+                                        <input type="date" class="form-control-sm" id="printDODateShipment" value="<?= $printDODate ?>" placeholder="" required>
+                                        <input type="time" class="form-control-sm" id="printDOTimeShipment" value="<?= $printDOTime ?>" placeholder="" required>
+                                    </td>
+                                </tr>
+
+
+                            </table>
+                        </div>
+
+                        <div class="col-md-6">
+                            <table>
+                                <tr>
+                                    <td>Customer</td>
+                                    <td>:</td>
+                                    <td style="white-space: nowrap;">
+
+                                        <?php
+                                        $customer_id = $order->customer_id ?? '';
+                                        $ship_to = $order->ship_to ?? '';
+                                        $customer_name = $order->customer_name ?? '';
+                                        ?>
+
+                                        <input type="hidden" id="customerId" value="<?= $customer_id ?>">
+                                        <input style="max-width: 120px;" type="text" class="form-control-sm required-input" id="shipTo" value="<?= $ship_to ?>" placeholder="" readonly>
+                                        <input style="width: 220px;" type="text" class="form-control-sm required-input" id="customerName" value="<?= $customer_name ?>" placeholder="" readonly>
+                                        <button type="button" class="btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModalCustomer">search</button>
+
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>Customer Address</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php $customer_address = $order->ship_to_address1 ?? ''; ?>
+                                        <textarea class="form-control-sm required-input" rows="3" style="width: 100%;" readonly name="" id="customerAddress"><?= $customer_address ?></textarea>
+
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Customer City</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php $customer_city = $order->ship_to_city ?? ''; ?>
+                                        <input type="text" class="form-control-sm required-input" id="customerCity" placeholder="" value="<?= $customer_city ?>" required>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Transporter</td>
+                                    <td>:</td>
+                                    <td style="white-space: nowrap;">
+
+                                        <?php
+                                        $transporter_id = $order->transporter_id ?? '';
+                                        $transporter_code = $order->ekspedisi_code ?? '';
+                                        $transporter_name = $order->ekspedisi_name ?? '';
+                                        ?>
+
+                                        <input type="hidden" id="transporter_id_shipment" value="<?= $transporter_id ?>">
+                                        <input style="max-width: 120px;" type="text" class="form-control-sm" id="transporter_shipment" value="<?= $transporter_code ?>" placeholder="" readonly>
+                                        <input style="width: 220px;" type="text" class="form-control-sm" id="transporter_name_shipment" value="<?= $transporter_name ?>" placeholder="" readonly>
+                                        <button type="button" class="btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModalEkspedisi2">search</button>
+
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Truck Type</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php
+                                        $truckType = $order->truck_type ?? '';
+                                        ?>
+
+                                        <select class="form-control-sm" id="truckTypeShipment">
+                                            <option value="">-- Choose --</option>
+                                            <?php
+                                            foreach ($truck->result() as $data) {
+                                            ?>
+                                                <option value="<?= $data->truck_name ?>" <?= ($data->truck_name == $truckType) ? 'selected' : ''; ?>> <?= $data->truck_name ?></option>
+                                            <?php
+                                            }
+                                            ?>
+                                        </select>
+                                    </td>
+                                </tr>
+
+
+                                <tr>
+                                    <td>Truck Arrival</td>
+                                    <td>:</td>
+                                    <td>
+                                        <?php
+                                        $truckArrivalDate = $order->truck_arival_date ?? date("Y-m-d");
+                                        $truckArrivalTime = isset($order->truck_arival_time) ? date('H:i', strtotime($order->truck_arival_time)) : '';
+                                        ?>
+                                        <input type="date" class="form-control-sm" id="truckArivalDateShipment" value="<?= $truckArrivalDate ?>" placeholder="" required>
+                                        <input type="time" class="form-control-sm" id="truckArivalTimeShipment" value="<?= $truckArrivalTime ?>" placeholder="" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Truck No</td>
+                                    <td>:</td>
+                                    <td>
+                                        <input type="text" class="form-control-sm" id="truckNoShipment" value="<?= $order->truck_no ?? '' ?>" placeholder="" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Driver Name</td>
+                                    <td>:</td>
+                                    <td>
+                                        <input type="text" class="form-control-sm" id="driverNameShipment" value="<?= $order->driver_name ?? '' ?>" placeholder="" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Driver Phone</td>
+                                    <td>:</td>
+                                    <td>
+                                        <input type="text" class="form-control-sm" id="driverPhoneShipment" value="<?= $order->driver_phone ?? '' ?>" placeholder="" required>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Remarks</td>
+                                    <td>:</td>
+                                    <td>
+                                        <input type="text" class="form-control-sm" id="remarksShipment" placeholder="" value="<?= $order->remarks ?? '' ?>" required>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <div class="col-md-12">
         <div class="card headerInfo">
             <div class="card-header bg-default">
                 <strong>Total Selected Items: <span id="selectedOrdersCount">0</span></strong>
-                <button type="button" class="btn btn-sm bg-primary float-end text-white" data-bs-toggle="modal" data-bs-target="#modalAvailableOrder">List Item</button>
+                <button type="button" class="btn-sm bg-warning float-end" data-bs-toggle="modal" data-bs-target="#modalAvailableOrder">List Item</button>
             </div>
             <div class="card-body table-responsive">
                 <table style="white-space: nowrap; font-size: smaller;" class="table table-bordered table-sm table-striped" id="cartTable">
@@ -260,7 +523,8 @@
                             <th class="d-none">LPN</th>
                             <th>Qty</th>
                             <th>UoM</th>
-                            <th>Receive Location</th>
+                            <th>Rcv Loc</th>
+                            <th>Put Loc</th>
                             <th>Expiry Date</th>
                             <th>QA</th>
                             <th>Action</th>
@@ -272,7 +536,7 @@
                         <tr>
                             <td colspan="3">Total</td>
                             <td><strong id="totalQty"></strong></td>
-                            <td colspan="5"></td>
+                            <td colspan="6"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -308,7 +572,57 @@
                                 <td><?= $no++ ?></td>
                                 <td><?= $data->code ?></td>
                                 <td><?= $data->name ?></td>
-                                <td><button class="btn btn-primary btn-sm btnEkpedisi" data-id="<?= $data->id ?>" data-code="<?= $data->code ?>" data-name="<?= $data->name ?>">select</button></td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm btnEkpedisi"
+                                        data-id="<?= $data->id ?>"
+                                        data-code="<?= $data->code ?>"
+                                        data-name="<?= $data->name ?>">select</button>
+                                </td>
+                            </tr>
+                        <?php
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModalEkspedisi2" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Ekspedisi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table style="font-size: smaller;" class="table table-bordered table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Eks ID</th>
+                            <th>Eks Name</th>
+                            <th>Select</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $no = 1;
+                        foreach ($ekspedisi->result() as $data) {
+                        ?>
+                            <tr>
+                                <td><?= $no++ ?></td>
+                                <td><?= $data->code ?></td>
+                                <td><?= $data->name ?></td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm btnEkpedisi2"
+                                        data-id="<?= $data->id ?>"
+                                        data-code="<?= $data->code ?>"
+                                        data-name="<?= $data->name ?>">select</button>
+                                </td>
                             </tr>
                         <?php
                         }
@@ -354,6 +668,64 @@
                                         data-id="<?= $data->id ?>"
                                         data-code="<?= $data->code ?>"
                                         data-name="<?= $data->name ?>">select</button>
+                                </td>
+                            </tr>
+                        <?php
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Customer -->
+<div class="modal fade" id="exampleModalCustomer" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table style="font-size: smaller;" class="table table-bordered table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Ship To</th>
+                            <th>Customer Name</th>
+                            <th>Address</th>
+                            <th>Select</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $no = 1;
+                        foreach ($customer->result() as $data) {
+                        ?>
+                            <tr>
+                                <td><?= $no++ ?></td>
+                                <td><?= $data->ship_to ?></td>
+                                <td><?= $data->customer_name ?></td>
+                                <td>
+                                    <?= $data->ship_to_address1 ?>
+                                    <br>
+                                    <?= $data->ship_to_address2 ?>
+                                    <br>
+                                    <?= $data->ship_to_address3 ?>
+                                    <br>
+                                    <?= $data->ship_to_city ?>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm btncustomer"
+                                        data-id="<?= $data->id ?>"
+                                        data-ship-to="<?= $data->ship_to ?>"
+                                        data-customer-name="<?= $data->customer_name ?>"
+                                        data-address1="<?= $data->ship_to_address1 ?>"
+                                        data-city="<?= $data->ship_to_city ?>">select</button>
                                 </td>
                             </tr>
                         <?php
@@ -478,7 +850,7 @@
             let dataToPost = {};
             let prosesAction = $('#prosesAction').val();
             if (prosesAction == 'edit') {
-                dataToPost.ib_no = $('#spkNumber').val();
+                dataToPost.ib_no = $('#receiveNumber').val();
             }
 
             $.ajax({
@@ -568,6 +940,16 @@
             $('#exampleModal').modal('hide');
         })
 
+        $('.btnEkpedisi2').on('click', function() {
+            let id = $(this).data('id');
+            let code = $(this).data('code');
+            let name = $(this).data('name');
+            $('#transporter_id_shipment').val(id);
+            $('#transporter_shipment').val(code);
+            $('#transporter_name_shipment').val(name);
+            $('#exampleModalEkspedisi2').modal('hide');
+        })
+
         $('.btnSupplier').on('click', function() {
             let id = $(this).data('id');
             let code = $(this).data('code');
@@ -576,6 +958,20 @@
             $('#supplierCode').val(code);
             $('#supplierName').val(name);
             $('#exampleModalSupplier').modal('hide');
+        })
+
+        $('.btncustomer').on('click', function() {
+            let id = $(this).data('id');
+            let ship_to = $(this).data('ship-to');
+            let customer_name = $(this).data('customer-name');
+            let customer_address = $(this).data('address1');
+            let customer_city = $(this).data('city');
+            $('#customerId').val(id);
+            $('#shipTo').val(ship_to);
+            $('#customerName').val(customer_name);
+            $('#customerAddress').val(customer_address);
+            $('#customerCity').val(customer_city);
+            $('#exampleModalCustomer').modal('hide');
         })
 
         $('.btnType').on('click', function() {
@@ -683,6 +1079,7 @@
                     </select>
                 </td>
                 <td><input type="text" class="form-control-sm in-rcv-loc" value="${order.receive_location ?? 'RECVDOCK'}" readonly></td>
+                <td><input type="text" class="form-control-sm in-put-loc" value="${order.putaway_location ?? 'CRSSDOCK'}" readonly></td>
                 <td><input type="date" class="form-control-sm in-expiry" value="${order.expiry_date ?? expiry}"></td>
                 <td><input style="max-width: 80px;" type="text" class="form-control-sm in-qa" value="A" readonly></td>
                 <td>
@@ -776,42 +1173,35 @@
         function proccess(putaway = false) {
             if (selectedOrders.length > 0) {
                 // startLoading();
-                let orderIds = selectedOrders.map(order => order.shipment_id);
-
-                const dataObj = {};
+                const headerReceive = {};
+                const headerShipment = {};
 
                 // Mencari semua input dan select di dalam form
-                $('#formHeader').find('input, select').each(function() {
-                    const inputId = $(this).attr('id'); // Ambil ID
-                    const inputValue = $(this).val(); // Ambil nilai
-
-                    // Simpan dalam objek
-                    dataObj[inputId] = inputValue;
+                $('#formHeaderReceive').find('input, select').each(function() {
+                    const inputId = $(this).attr('id');
+                    const inputValue = $(this).val();
+                    headerReceive[inputId] = inputValue;
                 });
-
-                // console.log(dataObj); // Untuk memeriksa objek hasil
-
-                let suratJalanHeader = {
-                    nomor: $('#suratJalanNumber').val(),
-                    tanggal: $('#tanggalSuratJalan').val(),
-                    pengirim: $('#namaPengirim').val(),
-                    penerima: $('#namaPenerima').val()
-                };
+                $('#formHeaderShipment').find('input, select').each(function() {
+                    const inputId = $(this).attr('id');
+                    const inputValue = $(this).val();
+                    headerShipment[inputId] = inputValue;
+                });
 
                 let itemsDetail = collectCartItems();
                 let prosesAction = $('#prosesAction').val();
 
-                let url = '<?= site_url('receiving/createProccess') ?>';
+                let url = '<?= site_url('crossdock/createProccess') ?>';
                 if (prosesAction == 'edit') {
-                    url = '<?= site_url('receiving/editProccess') ?>';
+                    url = '<?= site_url('crossdock/editProccess') ?>';
                 }
 
                 $.ajax({
-                    url: url, // URL ke function untuk create SPK
+                    url: url,
                     type: 'POST',
                     data: {
-                        order_ids: orderIds,
-                        header: dataObj,
+                        headerReceive: headerReceive,
+                        headerShipment: headerShipment,
                         items: itemsDetail
                     },
                     dataType: 'json',
@@ -822,7 +1212,7 @@
 
 
                             if (putaway) {
-                                let ib_no = $('#spkNumber').val();
+                                let ib_no = $('#receiveNumber').val();
                                 $.post('<?= site_url('putaway/create') ?>', {
                                     ib_no
                                 }, function(response) {

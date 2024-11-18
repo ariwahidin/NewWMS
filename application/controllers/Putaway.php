@@ -66,11 +66,30 @@ class Putaway extends CI_Controller
     public function create()
     {
 
+        date_default_timezone_set('Asia/Jakarta');
         $ib_no = $this->input->post('ib_no');
 
         $receive_h = $this->receiving_m->getReceive($ib_no)->row();
-        $receive_d = $this->receiving_m->getReceiveDetail($ib_no)->result();
+
         $this->db->trans_start();
+
+        $trans_id_receive = $receive_h->trans_id;
+        $receive_number = $receive_h->receive_number;
+        $receive_d = $this->receiving_m->getReceiveDetail($ib_no)->result();
+
+        // pencatatan history
+        foreach ($receive_d as $dt) {
+            $dataHistory = array(
+                'trans_id' => $trans_id_receive,
+                'reff_no' => $receive_number,
+                'location' => $dt->receive_location,
+                'item_code' => $dt->item_code,
+                'qty' => $dt->qty,
+                'created_by' => $_SESSION['user_data']['username']
+            );
+            $this->db->insert('transaction_history', $dataHistory);
+        }
+
 
         $transID = $this->trans_m->getTransID('Putaway');
 
@@ -111,23 +130,14 @@ class Putaway extends CI_Controller
 
         $last_id = $this->db->insert_id();
 
-        $sqlUpdateStatus = "UPDATE receive_header SET is_complete = ? WHERE receive_number = ?";
-        $this->db->query($sqlUpdateStatus, array('Y', $ib_no));
+        $sqlUpdateStatus = "UPDATE receive_header SET is_complete = ?, completed_by = ?, completed_at = GETDATE() WHERE receive_number = ?";
+        $this->db->query($sqlUpdateStatus, array('Y', $_SESSION['user_data']['username'], $ib_no));
 
         foreach ($receive_d as $key => $value) {
-            // update column lpn number in table receive_detail
-            $lpn = $this->lpn_m->generate_lpn($value->id);
-            $this->db->set('lpn_id', $lpn['lpn_id']);
-            $this->db->set('lpn_number', $lpn['lpn_number']);
-            $this->db->where('id', $value->id);
-            $this->db->update('receive_detail');
-
             $dataToInsertPutawayDetail = array(
                 'putaway_id' => $last_id,
                 'receive_detail_id' => $value->id,
                 'putaway_number' => $putaway_number,
-                'lpn_id' => $lpn['lpn_id'],
-                'lpn_number' => $lpn['lpn_number'],
                 'item_code' => $value->item_code,
                 'qty_in' => $value->qty_in,
                 'qty_uom' => $value->qty_uom,
@@ -143,8 +153,6 @@ class Putaway extends CI_Controller
             $this->db->set('on_hand', 'on_hand + ' . (float)$value->qty, FALSE);
             $this->db->set('in_transit', 'in_transit - ' . (float)$value->qty, FALSE);
             $this->db->set('available', 'available + ' . (float)$value->qty, FALSE);
-            $this->db->set('lpn_id', $lpn['lpn_id']);
-            $this->db->set('lpn_number', $lpn['lpn_number']);
             $this->db->where('receive_detail_id', $value->id);
             $this->db->update('inventory');
         }
@@ -156,7 +164,7 @@ class Putaway extends CI_Controller
         // Mengecek apakah transaksi berhasil
         if ($this->db->trans_status() === FALSE) {
             // Jika terjadi kesalahan, rollback
-            echo json_encode(array('success' => false, 'message' => 'Transaksi gagal.'));
+            echo json_encode(array('success' => false, 'message' => 'Transaction Failed'));
         } else {
             // Kembalikan nomor surat jalan ke frontend
             echo json_encode(array('success' => true, 'putaway_number' => $putaway_number));
@@ -176,7 +184,7 @@ class Putaway extends CI_Controller
         $this->db->trans_start();
 
         $item = $this->putaway_m->getReceivingDetailByPutNo($putaway_number, $receive_detail_id)->row();
-        $lpn = $this->lpn_m->generate_lpn($post['receive_detail_id']);
+        // $lpn = $this->lpn_m->generate_lpn($post['receive_detail_id']);
 
         $dataInsertToPutawayDetail = array(
             'putaway_id' => $item->putaway_id,
@@ -189,8 +197,8 @@ class Putaway extends CI_Controller
             'qty' => $item->qty,
             'from_location' => $item->receive_location,
             'to_location' => null,
-            'lpn_id' => $lpn['lpn_id'],
-            'lpn_number' => $lpn['lpn_number'],
+            // 'lpn_id' => $lpn['lpn_id'],
+            // 'lpn_number' => $lpn['lpn_number'],
             'is_complete' => 'N',
             'created_by' => $_SESSION['user_data']['username'],
             'created_at' => date('Y-m-d H:i:s')
@@ -324,8 +332,8 @@ class Putaway extends CI_Controller
                 'qty' => $qty,
                 'from_location' => $i['rcv_loc'],
                 'to_location' => $i['put_loc'],
-                'lpn_id' => $i['lpn_id'],
-                'lpn_number' => $i['lpn_number'],
+                // 'lpn_id' => $i['lpn_id'],
+                // 'lpn_number' => $i['lpn_number'],
                 'created_by' => $_SESSION['user_data']['username'],
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_by' => $_SESSION['user_data']['username'],
@@ -354,8 +362,7 @@ class Putaway extends CI_Controller
                 'receive_date' => $i['receive_date'],
                 'expiry_date' => $i['expiry'],
                 'qa' => $i['qa'],
-                'lpn_id' => $i['lpn_id'],
-                'lpn_number' => $i['lpn_number'],
+                'is_pick' => $i['put_loc'] == 'CROSDOCK' ? 'N' : 'Y',
                 'putaway_id' => $putaway_id,
                 'putaway_detail_id' => $putaway_detail_id,
                 'created_by' => $_SESSION['user_data']['username']
@@ -366,15 +373,16 @@ class Putaway extends CI_Controller
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE) {
-            echo json_encode(array('success' => false, 'message' => 'Transaksi gagal.'));
+            echo json_encode(array('success' => false, 'message' => 'Transaction Failed'));
         } else {
-            echo json_encode(array('success' => true, 'message' => 'Transaksi sukses.'));
+            echo json_encode(array('success' => true, 'message' => 'Transaction Success.'));
         }
     }
 
     public function completePutaway()
     {
 
+        date_default_timezone_set('Asia/Jakarta');
         $putaway_number = $this->input->post('putaway_number');
         $header = $this->db->get_where('putaway_header', array('putaway_number' => $putaway_number))->row();
         if ($header->is_complete == 'Y') {
@@ -395,9 +403,31 @@ class Putaway extends CI_Controller
 
         $putaway = $this->db->get_where('putaway_header', array('putaway_number' => $putaway_number))->row();
         $putaway_id = $putaway->id;
+        $trans_id_putaway = $putaway->trans_id;
+
+
 
         $putaway_detail = $this->db->get_where('putaway_detail', array('putaway_id' => $putaway_id))->result();
-        foreach ($putaway_detail as $key => $value) {
+
+        // update lpn_id and is_complete in putaway detail
+        foreach ($putaway_detail as $pd) {
+            $receive_detail_id = $pd->receive_detail_id;
+            $lpn = $this->lpn_m->generate_lpn($receive_detail_id);
+            $lpn_id = $lpn['lpn_id'];
+            $lpn_number = $lpn['lpn_number'];
+
+            $this->db->set('lpn_id', $lpn_id);
+            $this->db->set('lpn_number', $lpn_number);
+            $this->db->set('is_complete', 'Y');
+            $this->db->set('complete_at', date('Y-m-d H:i:s'));
+            $this->db->set('complete_by', $_SESSION['user_data']['username']);
+            $this->db->where('id', $pd->id);
+            $this->db->update('putaway_detail');
+        }
+
+
+        $putaway_detail_updated = $this->db->get_where('putaway_detail', array('putaway_id' => $putaway_id))->result();
+        foreach ($putaway_detail_updated as $key => $value) {
             $this->db->set('on_hand', 'on_hand + ' . (float)$value->qty, FALSE);
             $this->db->set('in_transit', 'in_transit - ' . (float)$value->qty, FALSE);
             $this->db->set('available', 'available + ' . (float)$value->qty, FALSE);
@@ -405,6 +435,23 @@ class Putaway extends CI_Controller
             $this->db->set('lpn_number', $value->lpn_number);
             $this->db->where('putaway_detail_id', $value->id);
             $this->db->update('inventory');
+        }
+
+
+        // pencatatan history
+
+        foreach ($putaway_detail_updated as $hs) {
+            $dataHistory = array(
+                'trans_id' => $trans_id_putaway,
+                'reff_no' => $putaway_number,
+                'location' => $hs->to_location,
+                'item_code' => $hs->item_code,
+                'lpn_id' => $hs->lpn_id,
+                'lpn_number' => $hs->lpn_number,
+                'qty' => $hs->qty,
+                'created_by' => $_SESSION['user_data']['username']
+            );
+            $this->db->insert('transaction_history', $dataHistory);
         }
 
 
@@ -423,15 +470,29 @@ class Putaway extends CI_Controller
         }
 
         $this->db->set('is_complete', 'Y');
+        $this->db->set('completed_at', date('Y-m-d H:i:s'));
+        $this->db->set('completed_by', $_SESSION['user_data']['username']);
+        $this->db->set('updated_at', date('Y-m-d H:i:s'));
+        $this->db->set('updated_by', $_SESSION['user_data']['username']);
         $this->db->where('id', $putaway_id);
         $this->db->update('putaway_header');
+
+
+
+
+
+
+
+
+
+
 
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE) {
-            echo json_encode(array('success' => false, 'message' => 'Transaksi gagal.'));
+            echo json_encode(array('success' => false, 'message' => 'Transaction failed.'));
         } else {
-            echo json_encode(array('success' => true, 'message' => 'Transaksi sukses.'));
+            echo json_encode(array('success' => true, 'message' => 'Transaction success.'));
         }
     }
 
@@ -509,9 +570,9 @@ class Putaway extends CI_Controller
         if ($this->db->affected_rows() > 0) {
             $this->db->trans_complete();
             if ($this->db->trans_status() === FALSE) {
-                echo json_encode(array('success' => false, 'message' => 'Transaksi gagal.'));
+                echo json_encode(array('success' => false, 'message' => 'Transaction Failed'));
             } else {
-                echo json_encode(array('success' => true, 'message' => 'Transaksi sukses.'));
+                echo json_encode(array('success' => true, 'message' => 'Transaction Success.'));
             }
         }
     }

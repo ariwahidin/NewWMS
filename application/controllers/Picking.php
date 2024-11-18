@@ -78,6 +78,7 @@ class Picking extends CI_Controller
         }
 
         $shipment_id = $shipment_header->id;
+        $trans_id_shipment = $shipment_header->trans_id;
 
 
 
@@ -173,13 +174,25 @@ class Picking extends CI_Controller
         }
 
 
-
         $dataUpdateShipmentHeader = array(
             'is_complete' => 'Y',
         );
 
         $this->db->where('id', $shipment_id);
         $this->db->update('shipment_header', $dataUpdateShipmentHeader);
+
+
+        foreach ($shipment_details as $row2) {
+            $dataHistory = array(
+                'trans_id' => $trans_id_shipment,
+                'reff_no' => $shipment_number,
+                'location' => 'SHIPPLAN',
+                'item_code' => $row2['item_code'],
+                'qty' => $row2['qty'],
+                'created_by' => $_SESSION['user_data']['username']
+            );
+            $this->db->insert('transaction_history', $dataHistory);
+        }
 
 
         $this->db->trans_complete();
@@ -255,6 +268,7 @@ class Picking extends CI_Controller
             'shipment_number' => $row->shipment_number,
             'inventory_id' => $row->id,
             'location' => $row->location,
+            'to_location' => 'SHIPDOCK',
             'lpn_id' => $row->lpn_id,
             'lpn_number' => $row->lpn_number,
             'item_code'  => $row->item_code,
@@ -321,6 +335,7 @@ class Picking extends CI_Controller
 
         $pick_no = $post['pick_no'];
         $picking = $this->db->get_where('picking_header', array('picking_number' => $pick_no));
+        $trans_id_picking = $picking->row()->trans_id;
 
         if ($picking->num_rows() < 1) {
             $response = array(
@@ -380,6 +395,28 @@ class Picking extends CI_Controller
             $this->db->set('on_hand', 'on_hand + ' . $row1->qty, FALSE);
             $this->db->update('inventory');
         }
+
+
+        foreach ($picking_detail->result() as $row2) {
+        }
+
+
+        // pencatatan history
+        foreach ($picking_detail->result() as $row2) {
+            $dataHistory = array(
+                'trans_id' => $trans_id_picking,
+                'reff_no' => $pick_no,
+                'location' => $row2->to_location,
+                'item_code' => $row2->item_code,
+                'lpn_id' => $row2->lpn_id,
+                'lpn_number' => $row2->lpn_number,
+                'qty' => $row2->qty,
+                'created_by' => $_SESSION['user_data']['username']
+            );
+            $this->db->insert('transaction_history', $dataHistory);
+        }
+
+
 
         $this->db->trans_complete();
 

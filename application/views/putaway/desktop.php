@@ -743,7 +743,7 @@
         }
 
         function generateRow(index, order = {}) {
-            console.log(order);
+            // console.log(order);
 
             const today = new Date();
             const nextYear = new Date(today.setFullYear(today.getFullYear() + 1));
@@ -762,7 +762,7 @@
                     <input type="hidden" class="form-control-sm in-rcv-det-id" value="${order.receive_detail_id ?? ''}">
                     <input type="hidden" class="form-control-sm in-item" value="${order.item_code ?? ''}">
                     <input type="hidden" class="form-control-sm in-item-name" value="${order.item_name ?? ''}">
-                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty_in ?? '1'}" readonly>
+                    <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty_in ?? '1'}">
                 </td>
                 <td>
                     <input type="hidden" class="form-control-sm in-qty-uom" value="${order.qty_uom ?? ''}" readonly>
