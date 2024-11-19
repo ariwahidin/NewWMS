@@ -69,7 +69,6 @@
                 <tr>
                     <th style="width: 5%;">No.</th>
                     <th style="width: 25%;">Item Code</th>
-                    <th style="width: 25%;">LPN Number</th>
                     <th style="width: 10%;">Quantity</th>
                 </tr>
             </thead>
@@ -81,10 +80,6 @@
                         <td>
                             <canvas id="barcodeItemCode<?php echo $no; ?>" class="barcode"></canvas>
                             <p><?php echo $item['item_code']; ?></p>
-                        </td>
-                        <td>
-                            <canvas id="barcodeLpnNumber<?php echo $no; ?>" class="barcode"></canvas>
-                            <p><?php echo $item['lpn_number']; ?></p>
                         </td>
                         <td><?php echo $item['qty']; ?></td>
                     </tr>
@@ -110,10 +105,6 @@
             <?php $no = 1;
             foreach ($data as $item): ?>
                 JsBarcode("#barcodeItemCode<?php echo $no; ?>", '<?php echo $item['item_code']; ?>', {
-                    format: "CODE128",
-                    displayValue: false
-                });
-                JsBarcode("#barcodeLpnNumber<?php echo $no; ?>", '<?php echo $item['lpn_number']; ?>', {
                     format: "CODE128",
                     displayValue: false
                 });

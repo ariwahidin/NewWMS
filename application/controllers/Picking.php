@@ -261,11 +261,15 @@ class Picking extends CI_Controller
 
     private function createPickingDetail($row)
     {
+        // var_dump($row);
+        // die;
+
         $row_insert = array(
             'picking_id' => $row->picking_id,
             'picking_number' => $row->picking_number,
             'shipment_id' => $row->shipment_id,
             'shipment_number' => $row->shipment_number,
+            'whs_code' => $row->whs_code,
             'inventory_id' => $row->id,
             'location' => $row->location,
             'to_location' => 'SHIPDOCK',
@@ -397,8 +401,9 @@ class Picking extends CI_Controller
         }
 
 
-        foreach ($picking_detail->result() as $row2) {
-        }
+
+
+
 
 
         // pencatatan history
@@ -414,6 +419,25 @@ class Picking extends CI_Controller
                 'created_by' => $_SESSION['user_data']['username']
             );
             $this->db->insert('transaction_history', $dataHistory);
+        }
+
+
+        // pencatatan inventory movement
+        foreach ($picking_detail->result() as $mv) {
+            $dataHistory = array(
+                'whs_code' => $mv->whs_code,
+                'trans_id' => $trans_id_picking,
+                'lpn_id' => $mv->lpn_id,
+                'lpn_number' => $mv->lpn_number,
+                'item_code' => $mv->item_code,
+                'from_location' => $mv->location,
+                'to_location' => $mv->to_location,
+                'qty' => $mv->qty,
+                'reff_no' => $pick_no,
+                'type' => 'PICKING',
+                'created_by' => $_SESSION['user_data']['username']
+            );
+            $this->db->insert('inventory_movement', $dataHistory);
         }
 
 

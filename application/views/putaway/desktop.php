@@ -774,7 +774,7 @@
                 </td>
                 <td>
                     <input type="hidden" class="form-control-sm in-rcv-loc" value="${order.receive_location ?? ''}">
-                    <input type="text" class="form-control-sm in-put-loc" value="${order.to_location ?? ''}">
+                    <input type="text" class="form-control-sm in-put-loc" value="${order.to_location ?? ''}" maxlength="8">
                 </td>
                 <td class="d-none">
                     <input type="hidden" class="form-control-sm in-rcv-date" value="${order.receive_date ?? ''}" readonly>
