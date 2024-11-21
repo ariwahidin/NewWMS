@@ -1,14 +1,16 @@
 <div class="row">
     <div class="col-md-4 col-sm-12">
         <div class="card">
-            <div class="card-body table-responsive">
-                <form id="putawayForm" action="<?= base_url('putawayScan/receive') ?>" method="post">
+            <div class="card-body table-responsive text-center justify-content-center">
+                <form id="inventoryForm" action="<?= base_url('InventoryMng/chooseeInv') ?>" method="post">
                     <table class="table-nowrap table-sm fs-11 mb-0">
                         <tr>
-                            <td><label for="firstNameinput" class="form-label">Receive No : </label></td>
-                            <td><input style="max-width: 160px;" id="receiveNumber" name="receiveNumber" type="text" class="form-control-sm" required></td>
+                            <td><label for="firstNameinput" class="form-label">Inventory Menu : </label></td>
                             <td>
-                                <button onclick="document.getElementById('putawayForm').reset()" type="button" class="btn btn-sm btn-danger"><i class=" ri-delete-bin-7-line"></i></button>
+                                <select name="inventory" class="form-control" id="inventory">
+                                    <option value="">---- Select Inv Mng ----</option>
+                                    <option value="1">Internal Transfer Location</option>
+                                </select>
                             </td>
                         </tr>
                     </table>

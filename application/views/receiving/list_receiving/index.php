@@ -96,10 +96,6 @@
     $(document).ready(function() {
 
         $('#receiveTable').DataTable({
-            // scrollX: true,
-            // fixedColumns: {
-            //     leftColumns: 3 // Mengunci 3 kolom pertama
-            // }
         });
 
         $('.btnComplete').on('click', function() {

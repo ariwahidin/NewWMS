@@ -77,8 +77,6 @@ class PutawayScan extends CI_Controller
             exit;
         }
 
-
-
         $data = array(
             'title' => 'Putaway',
             'putaway' => $putaway
@@ -122,11 +120,16 @@ class PutawayScan extends CI_Controller
     {
         $post = $this->input->post();
 
+        // var_dump($post);
+        // die;
+
 
 
         date_default_timezone_set('Asia/Jakarta');
 
         $item_code = $post['itemCode'];
+        $grn_id = $post['grn_id'];
+        $grn_number = $post['grn_number'];
         $receive_number = $post['receiveNumber'];
         $receive_id = $post['receive_id'];
         $receive_detail_id = $post['receive_detail_id'];
@@ -182,6 +185,8 @@ class PutawayScan extends CI_Controller
             'receive_detail_id' => $receive_detail_id,
             'putaway_number' => $putaway_number,
             'whs_code' => $whs_code,
+            'grn_id' => $grn_id,
+            'grn_number' => $grn_number,
             'item_code' => $item_code,
             'qty_in' => $qty_in,
             'qty_uom' => $qty_uom,
@@ -213,6 +218,8 @@ class PutawayScan extends CI_Controller
         $data_insert_inventory = array(
             'whs_code' => $whs_code,
             'location' => $to_location,
+            'grn_id' => $grn_id,
+            'grn_number' => $grn_number,
             'item_code' => $item_code,
             'on_hand' => 0,
             'allocated' => 0,
@@ -227,6 +234,7 @@ class PutawayScan extends CI_Controller
             'created_by' => $_SESSION['user_data']['username']
         );
         $this->db->insert('inventory', $data_insert_inventory);
+
 
         $this->db->trans_complete();
 
@@ -346,9 +354,7 @@ class PutawayScan extends CI_Controller
     {
         $post = $this->input->post();
 
-        // var_dump($post);
-
-        $item = $this->putaway_m->getItemToPutaway($post['receiveNumber'], $post['putawayNumber'], $post['lpnNumber'])->row();
+        $item = $this->putaway_scan_m->getItemToPutaway($post['receiveNumber'], $post['putawayNumber'], $post['lpnNumber'])->row();
         if (!$item) {
             $response = array(
                 'success' => false,

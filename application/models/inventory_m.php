@@ -34,4 +34,13 @@ class Inventory_m extends CI_Model
         $query = $this->db->query($sql);
         return $query;
     }
+
+    // buat fungsi untuk menghapus inventory yang on_hand, allocated, available, in_transit = 0
+    
+    public function deleteZeroInventory()
+    {
+        $sql = "delete from inventory 
+                where on_hand = 0 and allocated = 0 and available = 0 and in_transit = 0";
+        $this->db->query($sql);
+    }
 }

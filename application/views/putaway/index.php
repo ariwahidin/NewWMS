@@ -155,9 +155,6 @@
 
 
         function completePutaway(putaway_number) {
-
-
-
             Swal.fire({
                 icon: 'question',
                 title: 'Are you sure?',

@@ -141,6 +141,7 @@ class Putaway_m extends CI_Model
         $sql = "select a.putaway_number, a.id as putaway_id, 
         b.receive_id, 
         b.id as receive_detail_id, b.item_code, c.item_name, 
+        b.grn_id, b.grn_number,
         b.qty_in, b.qty_uom, b.uom, b.qty,
         b.receive_location
         from putaway_header a

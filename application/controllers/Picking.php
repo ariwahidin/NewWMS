@@ -6,7 +6,7 @@ class Picking extends CI_Controller
     function __construct()
     {
         parent::__construct();
-        $this->load->model(['picking_m', 'order_m', 'truck_m', 'ekspedisi_m', 'customer_m', 'shipment_m']);
+        $this->load->model(['picking_m', 'order_m', 'truck_m', 'ekspedisi_m', 'customer_m', 'shipment_m', 'inventory_m']);
         is_not_logged_in();
     }
 
@@ -182,17 +182,17 @@ class Picking extends CI_Controller
         $this->db->update('shipment_header', $dataUpdateShipmentHeader);
 
 
-        foreach ($shipment_details as $row2) {
-            $dataHistory = array(
-                'trans_id' => $trans_id_shipment,
-                'reff_no' => $shipment_number,
-                'location' => 'SHIPPLAN',
-                'item_code' => $row2['item_code'],
-                'qty' => $row2['qty'],
-                'created_by' => $_SESSION['user_data']['username']
-            );
-            $this->db->insert('transaction_history', $dataHistory);
-        }
+        // foreach ($shipment_details as $row2) {
+        //     $dataHistory = array(
+        //         'trans_id' => $trans_id_shipment,
+        //         'reff_no' => $shipment_number,
+        //         'location' => 'SHIPPLAN',
+        //         'item_code' => $row2['item_code'],
+        //         'qty' => $row2['qty'],
+        //         'created_by' => $_SESSION['user_data']['username']
+        //     );
+        //     $this->db->insert('transaction_history', $dataHistory);
+        // }
 
 
         $this->db->trans_complete();
@@ -275,6 +275,8 @@ class Picking extends CI_Controller
             'to_location' => 'SHIPDOCK',
             'lpn_id' => $row->lpn_id,
             'lpn_number' => $row->lpn_number,
+            'grn_id'  => $row->grn_id,
+            'grn_number' => $row->grn_number,
             'item_code'  => $row->item_code,
             'qty' => $row->qty_picking,
             'expiry_date' => $row->expiry_date,
@@ -306,6 +308,8 @@ class Picking extends CI_Controller
         $row_insert = array(
             'whs_code' => $row->whs_code,
             'location' => 'SHIPDOCK',
+            'grn_id'  => $row->grn_id,
+            'grn_number' => $row->grn_number,
             'item_code'  => $row->item_code,
             'on_hand' => 0,
             'allocated' => 0,
@@ -402,24 +406,20 @@ class Picking extends CI_Controller
 
 
 
-
-
-
-
         // pencatatan history
-        foreach ($picking_detail->result() as $row2) {
-            $dataHistory = array(
-                'trans_id' => $trans_id_picking,
-                'reff_no' => $pick_no,
-                'location' => $row2->to_location,
-                'item_code' => $row2->item_code,
-                'lpn_id' => $row2->lpn_id,
-                'lpn_number' => $row2->lpn_number,
-                'qty' => $row2->qty,
-                'created_by' => $_SESSION['user_data']['username']
-            );
-            $this->db->insert('transaction_history', $dataHistory);
-        }
+        // foreach ($picking_detail->result() as $row2) {
+        //     $dataHistory = array(
+        //         'trans_id' => $trans_id_picking,
+        //         'reff_no' => $pick_no,
+        //         'location' => $row2->to_location,
+        //         'item_code' => $row2->item_code,
+        //         'lpn_id' => $row2->lpn_id,
+        //         'lpn_number' => $row2->lpn_number,
+        //         'qty' => $row2->qty,
+        //         'created_by' => $_SESSION['user_data']['username']
+        //     );
+        //     $this->db->insert('transaction_history', $dataHistory);
+        // }
 
 
         // pencatatan inventory movement

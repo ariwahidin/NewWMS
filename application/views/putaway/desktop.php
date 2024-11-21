@@ -281,6 +281,7 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>GRN</th>
                                     <th>Item Code</th>
                                     <th>Item Name</th>
                                     <th class="d-none">LPN</th>
@@ -297,6 +298,7 @@
                                 ?>
                                     <tr>
                                         <td><?= $key + 1 ?></td>
+                                        <td><?= $value->grn_number ?></td>
                                         <td><?= $value->item_code ?></td>
                                         <td><?= $value->item_name ?></td>
                                         <td class="d-none"><?= $value->lpn_number ?></td>
@@ -324,7 +326,7 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="3">Total</td>
+                                    <td colspan="4">Total</td>
                                     <td id="totalQty"><?= $totalQty ?></td>
                                     <td></td>
                             </tfoot>
@@ -346,6 +348,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>GRN</th>
                             <th>Item Code</th>
                             <th>Item Name</th>
                             <th>Qty</th>
@@ -361,9 +364,9 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="3"><strong>Total </strong></td>
+                            <td colspan="4"><strong>Total </strong></td>
                             <td class="text-center"> <strong><span id="totalCartQty"></span></strong> </td>
-                            <td colspan="4"></td>
+                            <td colspan="5"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -755,12 +758,15 @@
             return `
             <tr>
                 <td>${index + 1}</td>
+                <td>${order.grn_number ?? ''}</td>
                 <td>${order.item_code ?? ''}</td>
                 <td>${order.item_name ?? ''}</td>
                 <td>
                     <input type="hidden" class="form-control-sm in-id" value="${order.id ?? ''}">
                     <input type="hidden" class="form-control-sm in-rcv-det-id" value="${order.receive_detail_id ?? ''}">
                     <input type="hidden" class="form-control-sm in-item" value="${order.item_code ?? ''}">
+                    <input type="hidden" class="form-control-sm in-grn" value="${order.grn_number ?? ''}">
+                    <input type="hidden" class="form-control-sm in-grn-id" value="${order.grn_id ?? ''}">
                     <input type="hidden" class="form-control-sm in-item-name" value="${order.item_name ?? ''}">
                     <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty_in ?? '1'}">
                 </td>
@@ -1001,6 +1007,8 @@
                 let qty_uom = $(this).find('.in-qty-uom').val();
                 let uom = $(this).find('.in-uom').val();
                 let quantity = $(this).find('.in-qty').val();
+                let grn = $(this).find('.in-grn').val();
+                let grn_id = $(this).find('.in-grn-id').val();
                 let lpn_id = $(this).find('.in-lpn-id').val();
                 let lpn_number = $(this).find('.in-lpn-number').val();
                 let rcv_location = $(this).find('.in-rcv-loc').val();
@@ -1027,6 +1035,8 @@
                         qty_uom: qty_uom,
                         uom: uom,
                         quantity: parseInt(quantity),
+                        grn_id: grn_id,
+                        grn_number: grn,
                         lpn_id: lpn_id,
                         lpn_number: lpn_number,
                         rcv_loc: rcv_location,

@@ -99,6 +99,7 @@ class Receiving extends CI_Controller
         // var_dump($_POST);
         // die;
 
+        $whs_code = $_SESSION['user_data']['warehouse'];
         if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
             $response = array(
                 'success' => false,
@@ -155,6 +156,7 @@ class Receiving extends CI_Controller
         $dataInsertHeader = array(
             'trans_id' => $transID,
             'receive_number' => $nomorSuratJalan,
+            'whs_code' => $whs_code,
             'ship_reff' => $header['loadNumber'],
             'po_number' => $header['poNumber'],
             'sj_number' => $header['SJNumber'],

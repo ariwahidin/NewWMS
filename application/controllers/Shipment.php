@@ -79,8 +79,8 @@ class Shipment extends CI_Controller
     public function createProccess()
     {
         date_default_timezone_set('Asia/Jakarta');
-
         $shipReff = $this->input->post('header')['shipReff'];
+        $whs_code = $_SESSION['user_data']['warehouse'];
 
         $check = $this->db->get_where('shipment_header', array('ship_reff' => $shipReff));
         if ($check->num_rows() > 0) {
@@ -92,7 +92,6 @@ class Shipment extends CI_Controller
             exit;
         }
 
-        // check input item < 0
         if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
             $response = array(
                 'success' => false,
@@ -101,6 +100,7 @@ class Shipment extends CI_Controller
             echo json_encode($response);
             exit;
         }
+        
         // Memulai transaksi
         $this->db->trans_start();
 
@@ -134,6 +134,7 @@ class Shipment extends CI_Controller
         $nomorSuratJalan = $prefix . $currentYearMonth . $newNumber;
 
         $dataInsertHeader = array(
+            'whs_code' => $whs_code,
             'trans_id' => $transID,
             'shipment_number' => $nomorSuratJalan,
             'ship_reff' => $header['shipReff'],
@@ -174,7 +175,7 @@ class Shipment extends CI_Controller
             $qty_in = $order_id['quantity'];
             $qty_uom = (float)$uoms[1];
             $qty = $qty_in * $qty_uom;
-            $whs_code = $_SESSION['user_data']['warehouse'];
+            
 
             $dataInsertDetail = array(
                 'whs_code' => $whs_code,

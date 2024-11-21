@@ -6,7 +6,7 @@ class Putaway extends CI_Controller
     function __construct()
     {
         parent::__construct();
-        $this->load->model(['order_m', 'truck_m', 'ekspedisi_m', 'receiving_m', 'trans_m', 'supplier_m', 'putaway_m', 'item_m', 'lpn_m']);
+        $this->load->model(['order_m', 'grn_m', 'truck_m', 'ekspedisi_m', 'receiving_m', 'trans_m', 'supplier_m', 'putaway_m', 'item_m', 'lpn_m']);
         is_not_logged_in();
     }
 
@@ -78,17 +78,17 @@ class Putaway extends CI_Controller
         $receive_d = $this->receiving_m->getReceiveDetail($ib_no)->result();
 
         // pencatatan history
-        foreach ($receive_d as $dt) {
-            $dataHistory = array(
-                'trans_id' => $trans_id_receive,
-                'reff_no' => $receive_number,
-                'location' => $dt->receive_location,
-                'item_code' => $dt->item_code,
-                'qty' => $dt->qty,
-                'created_by' => $_SESSION['user_data']['username']
-            );
-            $this->db->insert('transaction_history', $dataHistory);
-        }
+        // foreach ($receive_d as $dt) {
+        //     $dataHistory = array(
+        //         'trans_id' => $trans_id_receive,
+        //         'reff_no' => $receive_number,
+        //         'location' => $dt->receive_location,
+        //         'item_code' => $dt->item_code,
+        //         'qty' => $dt->qty,
+        //         'created_by' => $_SESSION['user_data']['username']
+        //     );
+        //     $this->db->insert('transaction_history', $dataHistory);
+        // }
 
 
         $transID = $this->trans_m->getTransID('Putaway');
@@ -135,10 +135,24 @@ class Putaway extends CI_Controller
         $whs_code = $_SESSION['user_data']['warehouse'];
 
         foreach ($receive_d as $key => $value) {
+
+            $receive_detail_id = $value->id;
+            $grn = $this->grn_m->generate_grn($receive_detail_id);
+            $grn_id = $grn['grn_id'];
+            $grn_number = $grn['grn_number'];
+
+            $this->db->set('grn_id', $grn_id);
+            $this->db->set('grn_number', $grn_number);
+            $this->db->where('id', $value->id);
+            $this->db->update('receive_detail');
+
+
             $dataToInsertPutawayDetail = array(
                 'putaway_id' => $last_id,
-                'receive_detail_id' => $value->id,
+                'receive_detail_id' => $receive_detail_id,
                 'putaway_number' => $putaway_number,
+                'grn_id' => $grn_id,
+                'grn_number' => $grn_number,
                 'whs_code' => $whs_code,
                 'item_code' => $value->item_code,
                 'qty_in' => $value->qty_in,
@@ -152,6 +166,8 @@ class Putaway extends CI_Controller
             $this->db->insert('putaway_detail', $dataToInsertPutawayDetail);
 
             // update inventory
+            $this->db->set('grn_id', $grn_id);
+            $this->db->set('grn_number', $grn_number);
             $this->db->set('on_hand', 'on_hand + ' . (float)$value->qty, FALSE);
             $this->db->set('in_transit', 'in_transit - ' . (float)$value->qty, FALSE);
             $this->db->set('available', 'available + ' . (float)$value->qty, FALSE);
@@ -177,9 +193,6 @@ class Putaway extends CI_Controller
     {
         $post = $this->input->post();
 
-        // var_dump($post);
-        // die;
-
         $putaway_number = $post['putaway_number'];
         $receive_detail_id = $post['receive_detail_id'];
         $whs_code = $_SESSION['user_data']['warehouse'];
@@ -187,12 +200,13 @@ class Putaway extends CI_Controller
         $this->db->trans_start();
 
         $item = $this->putaway_m->getReceivingDetailByPutNo($putaway_number, $receive_detail_id)->row();
-        // $lpn = $this->lpn_m->generate_lpn($post['receive_detail_id']);
 
         $dataInsertToPutawayDetail = array(
             'putaway_id' => $item->putaway_id,
             'receive_detail_id' => $post['receive_detail_id'],
             'putaway_number' => $item->putaway_number,
+            'grn_id' => $item->grn_id,
+            'grn_number' => $item->grn_number,
             'whs_code' => $whs_code,
             'item_code' => $item->item_code,
             'qty_in' => $item->qty_in,
@@ -201,8 +215,6 @@ class Putaway extends CI_Controller
             'qty' => $item->qty,
             'from_location' => $item->receive_location,
             'to_location' => null,
-            // 'lpn_id' => $lpn['lpn_id'],
-            // 'lpn_number' => $lpn['lpn_number'],
             'is_complete' => 'N',
             'created_by' => $_SESSION['user_data']['username'],
             'created_at' => date('Y-m-d H:i:s')
@@ -259,6 +271,9 @@ class Putaway extends CI_Controller
 
     public function editProccess()
     {
+
+        // var_dump($_POST);
+        // die;
 
         $putaway_number = $this->input->post('header')['putawayNumber'];
         // check if putaway number exist with query builder
@@ -331,6 +346,8 @@ class Putaway extends CI_Controller
                 'receive_detail_id' => $i['receive_detail_id'],
                 'putaway_number' => $putaway_number,
                 'whs_code' => $whs_code,
+                'grn_id' => $i['grn_id'],
+                'grn_number' => $i['grn_number'],
                 'item_code' => $i['item_code'],
                 'qty_in' => $qty_in,
                 'qty_uom' => $qty_uom,
@@ -358,6 +375,8 @@ class Putaway extends CI_Controller
             $data_insert_inventory = array(
                 'whs_code' => $whs_code,
                 'location' => $i['put_loc'],
+                'grn_id' => $i['grn_id'],
+                'grn_number' => $i['grn_number'],
                 'item_code' => $i['item_code'],
                 'on_hand' => 0,
                 'allocated' => 0,
@@ -405,12 +424,13 @@ class Putaway extends CI_Controller
 
         $this->db->trans_start();
 
-        $putaway = $this->db->get_where('putaway_header', array('putaway_number' => $putaway_number))->row();
+        $sqlPutHeader = "SELECT a.*, b.trans_name FROM putaway_header a
+                        INNER JOIN trans b ON a.trans_id = b.id
+                        WHERE a.putaway_number = ?";
+        $putaway = $this->db->query($sqlPutHeader, array($putaway_number))->row();
         $putaway_id = $putaway->id;
         $trans_id_putaway = $putaway->trans_id;
-
-
-
+        $trans_name = $putaway->trans_name;
         $putaway_detail = $this->db->get_where('putaway_detail', array('putaway_id' => $putaway_id))->result();
 
         // update lpn_id and is_complete in putaway detail
@@ -443,25 +463,27 @@ class Putaway extends CI_Controller
 
 
         // pencatatan history
-        foreach ($putaway_detail_updated as $hs) {
-            $dataHistory = array(
-                'trans_id' => $trans_id_putaway,
-                'reff_no' => $putaway_number,
-                'location' => $hs->to_location,
-                'item_code' => $hs->item_code,
-                'lpn_id' => $hs->lpn_id,
-                'lpn_number' => $hs->lpn_number,
-                'qty' => $hs->qty,
-                'created_by' => $_SESSION['user_data']['username']
-            );
-            $this->db->insert('transaction_history', $dataHistory);
-        }
+        // foreach ($putaway_detail_updated as $hs) {
+        //     $dataHistory = array(
+        //         'trans_id' => $trans_id_putaway,
+        //         'reff_no' => $putaway_number,
+        //         'location' => $hs->to_location,
+        //         'item_code' => $hs->item_code,
+        //         'lpn_id' => $hs->lpn_id,
+        //         'lpn_number' => $hs->lpn_number,
+        //         'qty' => $hs->qty,
+        //         'created_by' => $_SESSION['user_data']['username']
+        //     );
+        //     $this->db->insert('transaction_history', $dataHistory);
+        // }
 
         // pencatatan inventory movement
         foreach ($putaway_detail_updated as $mv) {
             $dataHistory = array(
                 'whs_code' => $mv->whs_code,
                 'trans_id' => $trans_id_putaway,
+                'grn_id' => $mv->grn_id,
+                'grn_number' => $mv->grn_number,
                 'lpn_id' => $mv->lpn_id,
                 'lpn_number' => $mv->lpn_number,
                 'item_code' => $mv->item_code,
@@ -469,7 +491,7 @@ class Putaway extends CI_Controller
                 'to_location' => $mv->to_location,
                 'qty' => $mv->qty,
                 'reff_no' => $putaway_number,
-                'type' => 'PUTAWAY',
+                'type' => $trans_name,
                 'created_by' => $_SESSION['user_data']['username']
             );
             $this->db->insert('inventory_movement', $dataHistory);
