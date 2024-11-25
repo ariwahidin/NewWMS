@@ -35,8 +35,12 @@
                                     <td>Receive Number</td>
                                     <td>:</td>
                                     <td>
-                                        <input type="hidden" id="prosesAction" value="<?= (isset($order)) && $order->receive_number ? 'edit' : 'add'; ?>">
-                                        <input style="max-width: 100px" type="text" class="form-control-sm" id="spkNumber" placeholder="" value="<?= $order->receive_number ?? 'Auto Generated' ?>" readonly>
+                                        <?php
+                                        $prosesAction = (isset($order)) && $order->receive_number && !isset($_GET['copy']) ? 'edit' : 'add';
+                                        ?>
+                                        <input type="hidden" id="prosesAction" value="<?= $prosesAction; ?>">
+                                        <input style="max-width: 100px" type="text" class="form-control-sm" placeholder="" value="<?= $order->receive_number && !isset($_GET['copy'])  ? $order->receive_number : 'Auto Generated' ?>" readonly>
+                                        <input style="max-width: 100px" type="hidden" class="form-control-sm" id="spkNumber" placeholder="" value="<?= $order->receive_number ?? 'Auto Generated' ?>" readonly>
                                         <input style="max-width: 80px" type="hidden" class="form-control-sm d-inline" id="status" placeholder="" value="<?= $order->is_complete ?? '' ?>" readonly>
                                     </td>
                                 </tr>
@@ -477,9 +481,11 @@
 
             let dataToPost = {};
             let prosesAction = $('#prosesAction').val();
-            if (prosesAction == 'edit') {
-                dataToPost.ib_no = $('#spkNumber').val();
-            }
+
+
+            // if (prosesAction == 'edit') {
+            dataToPost.ib_no = $('#spkNumber').val();
+            // }
 
             $.ajax({
                 url: '<?= site_url('receiving/getItems') ?>',
@@ -507,21 +513,21 @@
                         stopLoading();
                     });
 
-                    if (prosesAction == 'edit') {
-                        selectedOrders = data.shipment_current;
+                    // if (prosesAction == 'edit') {
+                    selectedOrders = data.shipment_current;
 
-                        $.each(selectedOrders, function(index, order) {
-                            order.item_code = order.item_code;
-                        });
+                    $.each(selectedOrders, function(index, order) {
+                        order.item_code = order.item_code;
+                    });
 
-                        updateCartTable();
+                    updateCartTable();
 
-                        $.each(selectedOrders, function(index, order) {
-                            $('#tableShipments input[value="' + order.item_code + '"]').prop('checked', true);
-                        })
+                    $.each(selectedOrders, function(index, order) {
+                        $('#tableShipments input[value="' + order.item_code + '"]').prop('checked', true);
+                    })
 
-                        makeFieldsReadonly();
-                    }
+                    makeFieldsReadonly();
+                    // }
                 }
             });
         }
@@ -779,17 +785,11 @@
                 let orderIds = selectedOrders.map(order => order.shipment_id);
 
                 const dataObj = {};
-
-                // Mencari semua input dan select di dalam form
                 $('#formHeader').find('input, select').each(function() {
-                    const inputId = $(this).attr('id'); // Ambil ID
-                    const inputValue = $(this).val(); // Ambil nilai
-
-                    // Simpan dalam objek
+                    const inputId = $(this).attr('id');
+                    const inputValue = $(this).val();
                     dataObj[inputId] = inputValue;
                 });
-
-                // console.log(dataObj); // Untuk memeriksa objek hasil
 
                 let suratJalanHeader = {
                     nomor: $('#suratJalanNumber').val(),
@@ -807,7 +807,7 @@
                 }
 
                 $.ajax({
-                    url: url, // URL ke function untuk create SPK
+                    url: url,
                     type: 'POST',
                     data: {
                         order_ids: orderIds,

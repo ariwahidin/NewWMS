@@ -63,8 +63,8 @@
                                 <td><?= $no++ ?></td>
                                 <td>
                                     <a href="<?= base_url('receiving/edit?edit=true&ib=' . $data->receive_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
+                                    <a href="<?= base_url('receiving/edit?copy=true&edit=false&ib=' . $data->receive_number) ?>" class="btn btn-sm btn-warning" title="Copy Receive"><i class="ri-file-copy-2-fill"></i></a>
                                     <?php if ($data->is_complete == 'N') { ?>
-                                        <!-- if hover describe the fungc -->
                                         <button class="btn btn-sm btn-success btnComplete fs-12" data-rcv-number="<?= $data->receive_number ?>" title="Click to complete the receiving process and proceed to putaway"><i class="ri-check-fill"></i></button>
                                     <?php } ?>
                                 </td>
@@ -95,8 +95,7 @@
 <script>
     $(document).ready(function() {
 
-        $('#receiveTable').DataTable({
-        });
+        $('#receiveTable').DataTable({});
 
         $('.btnComplete').on('click', function() {
             let rcv_number = $(this).data('rcv-number');

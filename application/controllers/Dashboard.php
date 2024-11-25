@@ -12,7 +12,7 @@ class Dashboard extends CI_Controller
 
     public function render($view, array $data = null)
     {
-        $this->load->view('template/header');
+        $this->load->view('template/header', $data);
         $this->load->view($view, $data);
         $this->load->view('template/footer');
     }
@@ -44,6 +44,7 @@ class Dashboard extends CI_Controller
         // );
 
         $data = array(
+            'title' => 'Dashboard Activity Inbound & Outbound',
             'shipments' => null
         );
 

@@ -51,8 +51,8 @@ class Shipment_m extends CI_Model
         $where = array();
 
         $isConfrim = "";
-        
-        if ( $shipment_number == null && $is_confirm == null) {
+
+        if ($shipment_number == null && $is_confirm == null) {
             $isConfrim = " AND a.is_complete = 'N'";
         }
 
@@ -98,6 +98,21 @@ class Shipment_m extends CI_Model
                         group by item_code
                         )b on a.item_code = b.item_code";
         $query = $this->db->query($sql);
+        return $query;
+    }
+
+    public function getLocation($item_code)
+    {
+        $whs_code = $_SESSION['user_data']['warehouse'];
+        $sql = "SELECT * FROM inventory
+                WHERE is_pick = 'Y'
+                AND available > 0
+                AND lpn_id is not null
+                AND whs_code = ?
+                AND item_code = ?
+                ORDER BY grn_number ASC";
+        $where = array($whs_code, $item_code);
+        $query = $this->db->query($sql, $where);
         return $query;
     }
 }

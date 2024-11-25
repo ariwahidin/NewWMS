@@ -52,6 +52,9 @@
                     <div class="tab-pane active show" id="byItem" role="tabpanel">
                         <div class="row">
                             <div class="col-md-6">
+                                <?php
+                                    // var_dump($by_item->result());
+                                ?>
                                 <table class="table table-nowrap table-bordered table-sm table-striped table-hover" id="byItemTable">
                                     <thead>
                                         <tr>

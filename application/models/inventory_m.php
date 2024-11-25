@@ -16,7 +16,7 @@ class Inventory_m extends CI_Model
 
     public function InventoryByLocation()
     {
-        $sql = "select [location], item_code,  SUM(on_hand) - SUM(in_transit) as on_hand, SUM(allocated) as allocated, SUM(available) as available, SUM(in_transit) as in_transit 
+        $sql = "select [location], item_code,  SUM(on_hand) as on_hand, SUM(allocated) as allocated, SUM(available) as available, SUM(in_transit) as in_transit 
                 from inventory
                 group by [location], item_code
                 order by [location] asc

@@ -3,9 +3,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="alert bg-danger border-danger text-white mb-3 mt-0" role="alert">
-                <!-- alert untuk user yang bukan pembuat tugas ini jadi tidak boleh edit -->
                 <strong>You are not the creator of this task, so you are not allowed to edit it, </strong> the creator is : <b><?= $order->created_by ?></b>
-
             </div>
         </div>
     </div>
@@ -14,6 +12,9 @@
 <div class="row">
     <div class="col-md-12">
         <a href="javascript:history.back()" class="btn btn-primary btn-sm mb-3"><i class="mdi mdi-keyboard-backspace"></i> Back</a>
+    </div>
+
+    <div class="col-md-12">
         <div class="card mb-3">
             <div class="card-header bg-warning d-none">
                 <h5 class="card-title mb-0 text-white">Header Information</h5>
@@ -127,8 +128,8 @@
                                     <td>:</td>
                                     <td>
                                         <?php $customer_address = $order->ship_to_address1 ?? ''; ?>
-                                        <textarea class="form-control-sm required-input" rows="3" style="width: 100%;"  readonly name="" id="customerAddress"><?= $customer_address ?></textarea>
-                                        
+                                        <textarea class="form-control-sm required-input" rows="3" style="width: 100%;" readonly name="" id="customerAddress"><?= $customer_address ?></textarea>
+
                                     </td>
                                 </tr>
                                 <tr>
@@ -244,7 +245,10 @@
                             <th>Item Name</th>
                             <th>Qty</th>
                             <th>UoM</th>
-                            <th>Action</th>
+                            <th>Pick Loc.</th>
+                            <th>QA</th>
+                            <th>GRN</th>
+                            <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -438,6 +442,39 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="modalLocation">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">List Location Available</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body table-responsive">
+                <!-- <input type="text" id="searchOrders" class="form-control-sm" placeholder="Search Order"> -->
+                <div style="max-height: 360px;">
+                    <table style="white-space: nowrap; font-size: smaller;" class="table table-sm table-bordered table-striped" id="tableLocation">
+                        <thead>
+                            <tr style="white-space: nowrap;">
+                                <th>No.</th>
+                                <th>Location</th>
+                                <th>GRN</th>
+                                <th>Item Code</th>
+                                <th>Available</th>
+                                <th>QA</th>
+                                <th class="text-center">Select</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="<?= base_url('jar/html/default/') ?>assets/libs/echarts/echarts.min.js"></script>
 
@@ -447,7 +484,6 @@
         let uom = [];
         let existingShipments = [];
         let selectedOrders = [];
-
         getUom();
 
         function makeFieldsReadonly() {
@@ -537,7 +573,6 @@
             });
         }
 
-        // Event untuk menambahkan order ke cart
         $('#tableShipments').on('change', '.order-checkbox', function() {
             let order = JSON.parse($(this).attr('data-order'));
 
@@ -605,7 +640,6 @@
             $('#modalType').modal('hide');
         })
 
-        // Function untuk mengupdate tampilan tabel cart
         function updateCartTable(item_code_selected = null, uncheck = false) {
             let cartBody = $('#cartTable tbody');
             let prosesAction = $('#prosesAction').val();
@@ -626,8 +660,7 @@
                     return;
                 }
 
-                if (prosesAction == 'edit') {
-                }
+                if (prosesAction == 'edit') {}
 
                 $('#generateSPK').prop('disabled', false); // Aktifkan tombol Generate SPK jika ada order di cart
                 $.each(selectedOrders, function(index, order) {
@@ -666,8 +699,6 @@
 
         function generateRow(index, order = {}) {
 
-
-
             const today = new Date();
             const nextYear = new Date(today.setFullYear(today.getFullYear() + 1));
             const formattedDate = nextYear.toISOString().split('T')[0];
@@ -691,10 +722,12 @@
                 if (order.item_code == value.item_code) {
                     optionUom += `<option value="${value.uom+","+value.converted_qty}" ${optionSelected}>${value.uom}</option>`;
                 }
-            }); 
+            });
+
+            let random_string = randomString();
 
             return `
-            <tr>
+            <tr data-random="${random_string}">
                 <td>${index + 1}</td>
                 <td>${order.item_code ?? ''}</td>
                 <td>${order.item_name ?? ''}</td>
@@ -704,14 +737,31 @@
                     <input type="hidden" class="form-control-sm in-item-name" value="${order.item_name ?? ''}">
                     <input style="max-width: 80px;" type="number" class="form-control-sm in-qty" value="${order.qty_in ?? '1'}">
                 </td>
+                
                 <td>
                     <select class="form-select-sm in-uom">
                         ${optionUom}
                     </select>
                 </td>
+
                 <td>
+                    <input type="hidden" class="form-control-sm in-inv-id" value="${order.inventory_id ?? ''}" readonly>
+                    <input type="text" class="form-control-sm in-pick-loc" value="${order.pick_location ?? ''}" readonly>
+                </td>
+
+                <td>
+                    <input style="width: 50px;" type="text" class="form-control-sm in-qa" value="${order.qa ?? ''}" readonly>
+                </td>
+
+                <td>
+                    <input type="text" class="form-control-sm in-grn-number" value="${order.grn_number ?? ''}" readonly>
+                </td>
+
+                <td class="text-center">
+                    <button type="button" class="btn btn-info btn-sm search-loc" data-random="${random_string}" data-id="${order.item_code ?? ''}"> <i class="ri-search-2-line"></i> </button>
+                    <button type="button" class="btn btn-warning btn-sm reset-loc" data-random="${random_string}" data-id="${order.item_code ?? ''}"> <i class="ri-eraser-line"></i> </button>
+                    <button type="button" class="btn btn-primary btn-sm add-line" data-id="${order.item_code ?? ''}"> <i class="ri-add-fill"></i> </button>
                     <button type="button" class="btn btn-danger btn-sm remove-order" data-id="${order.item_code ?? ''}"> <i class="ri-close-fill"></i> </button>
-                    <button type="button" class="btn btn-primary btn-sm add-line d-none" data-id="${order.item_code ?? ''}"> <i class="ri-add-fill"></i> </button>
                 </td>
             </tr>
         `;
@@ -752,6 +802,87 @@
             // updateCartTable(orderId, true);
 
         });
+
+        $('#cartTable').on('click', '.search-loc', function() {
+            let item_code = $(this).attr('data-id');
+            let random_string = $(this).attr('data-random');
+            searchLocation(item_code, random_string);
+        });
+
+        $('#cartTable').on('click', '.reset-loc', function() {
+            let random_string = $(this).attr('data-random');
+            let tr = $(`#cartTable tr[data-random="${random_string}"]`);
+            tr.find('.in-pick-loc').val('');
+            tr.find('.in-qa').val('');
+            tr.find('.in-inv-id').val('');
+            tr.find('.in-grn-number').val('');
+        });
+
+        function searchLocation(item_code, random_string) {
+            let bodyLocation = $('#tableLocation tbody');
+
+            $.ajax({
+                url: '<?= base_url('shipment/getLocation') ?>',
+                type: 'POST',
+                data: {
+                    item_code: item_code
+                },
+                dataType: 'JSON',
+                success: function(response) {
+                    bodyLocation.html('');
+                    let locations = response.data;
+
+                    locations.forEach((location, index) => {
+                        let tr = `<tr>
+                                    <td>${index + 1}</td>
+                                    <td>${location.location}</td>
+                                    <td>${location.grn_number}</td>
+                                    <td>${location.item_code}</td>
+                                    <td>${location.available}</td>
+                                    <td>${location.qa}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-primary btn-sm add-loc" data-random="${random_string}" data-location='${JSON.stringify(location)}'> <i class="ri-check-fill"></i> </button>
+                                    </td>
+                                </tr>`;
+                        bodyLocation.append(tr);
+                    })
+                    $('#modalLocation').modal('show');
+                }
+            })
+        }
+
+        $('#modalLocation').on('click', '.add-loc', function() {
+            let location = JSON.parse($(this).attr('data-location'));
+            let random_string = $(this).attr('data-random');
+            console.log(location);
+            console.log(random_string);
+            let tr = $(`#cartTable tr[data-random="${random_string}"]`);
+            tr.find('.in-pick-loc').val(location.location);
+            tr.find('.in-qa').val(location.qa);
+            tr.find('.in-inv-id').val(location.id);
+            tr.find('.in-grn-number').val(location.grn_number);
+            $('#modalLocation').modal('hide');
+        });
+
+        function randomString() {
+            // Get current timestamp
+            const timestamp = new Date().getTime();
+
+            // Characters that will be used for random string
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let randomString = '';
+
+            // Generate 10 random characters
+            for (let i = 0; i < 10; i++) {
+                const randomIndex = Math.floor(Math.random() * characters.length);
+                randomString += characters[randomIndex];
+            }
+
+            // Combine timestamp with random string
+            const result = `${randomString}${timestamp}`;
+
+            return result;
+        }
 
 
         // Function to update row numbers
@@ -926,7 +1057,6 @@
             }
         }
 
-        // Mengumpulkan detail item dari tabel cart saat ingin mengirim
         function collectCartItems() {
             let cartItems = [];
 
@@ -942,6 +1072,9 @@
                 let expiry = $(this).find('.in-expiry').val();
                 let qa = $(this).find('.in-qa').val();
                 let uom = $(this).find('.in-uom').val();
+                let pick_location = $(this).find('.in-pick-loc').val();
+                let inv_id = $(this).find('.in-inv-id').val();
+                let grn_number = $(this).find('.in-grn-number').val();
 
                 // Buat objek untuk setiap item
                 if (item_code && quantity) { // Pastikan kedua input tidak kosong
@@ -956,6 +1089,9 @@
                         expiry: expiry,
                         qa: qa,
                         uom: uom,
+                        pick_loc: pick_location,
+                        inv_id: inv_id,
+                        grn_number: grn_number
                     });
                 }
             });

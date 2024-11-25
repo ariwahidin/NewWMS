@@ -57,6 +57,17 @@ class Shipment extends CI_Controller
         $this->render('shipment/index', $data);
     }
 
+    public function getLocation()
+    {
+        $item_code = $this->input->post('item_code');
+        $location = $this->shipment_m->getLocation($item_code)->result();
+        $response = array(
+            'success' => true,
+            'data' => $location
+        );
+        echo json_encode($response);
+    }
+
     public function getItems()
     {
 
@@ -100,7 +111,10 @@ class Shipment extends CI_Controller
             echo json_encode($response);
             exit;
         }
-        
+
+        // var_dump($_POST['items']);
+        // die;
+
         // Memulai transaksi
         $this->db->trans_start();
 
@@ -175,7 +189,6 @@ class Shipment extends CI_Controller
             $qty_in = $order_id['quantity'];
             $qty_uom = (float)$uoms[1];
             $qty = $qty_in * $qty_uom;
-            
 
             $dataInsertDetail = array(
                 'whs_code' => $whs_code,
@@ -186,9 +199,14 @@ class Shipment extends CI_Controller
                 'qty_uom' => $qty_uom,
                 'uom' => $uom,
                 'qty' => $qty,
+                'pick_location' => $order_id['pick_loc'],
+                'inventory_id' => $order_id['inv_id'],
+                'qa' => $order_id['qa'],
+                'grn_number' => $order_id['grn_number'],
                 'created_at' => date('Y-m-d H:i:s'),
                 'created_by' => $_SESSION['user_data']['username']
             );
+
             $this->db->insert('shipment_detail', $dataInsertDetail);
         }
 
@@ -296,7 +314,7 @@ class Shipment extends CI_Controller
 
     public function editProccess()
     {
-
+        date_default_timezone_set('Asia/Jakarta');
         if (!isset($_POST['items']) || count($this->input->post('items')) < 1) {
             $response = array(
                 'success' => false,
@@ -359,7 +377,6 @@ class Shipment extends CI_Controller
 
         foreach ($order_ids as $order_id) {
 
-
             // Konversi quantity uom to pcs
             $uoms = explode(',', $order_id['uom']);
             $uom = $uoms[0];
@@ -377,6 +394,11 @@ class Shipment extends CI_Controller
                 'qty_uom' => $qty_uom,
                 'uom' => $uom,
                 'qty' => $qty,
+                'pick_location' => $order_id['pick_loc'],
+                'inventory_id' => $order_id['inv_id'],
+                'qa' => $order_id['qa'],
+                'grn_number' => $order_id['grn_number'],
+                'created_at' => date('Y-m-d H:i:s'),
                 'created_by' => $_SESSION['user_data']['username']
             );
             $this->db->insert('shipment_detail', $dataInsertDetail);

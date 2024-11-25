@@ -192,6 +192,8 @@ class InventoryMng extends CI_Controller
             'trans_id' => $trans_id,
             'grn_id' => $inventory->grn_id,
             'grn_number' => $inventory->grn_number,
+            'item_code_before' => $inventory->item_code,
+            'item_code_after' => $inventory->item_code,
             'whs_code_before' => $inventory->whs_code,
             'whs_code_after' => $inventory->whs_code,
             'location_before' => $inventory->location,

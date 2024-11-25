@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Putaway Sheet with QR Code</title>
+    <title>Picking Slip <?= $_GET['ship_no'] ?? '' ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         @media print {
             @page {
@@ -19,9 +20,9 @@
             }
         }
 
-        .qrcode {
-            width: 80px;
-            height: 80px;
+        .barcode {
+            width: 120px;
+            height: 40px;
             display: block;
             margin: 0 auto;
         }
@@ -136,11 +137,11 @@
         <div class="row mb-4 mt-3">
             <div class="col text-center">
                 <strong>Picking Number:</strong> <?php echo $picking_number; ?><br>
-                <canvas id="qrPutawayNumber" class="qrcode"></canvas>
+                <canvas id="qrPutawayNumber" class="barcode"></canvas>
             </div>
             <div class="col text-center">
                 <strong>Shipment Number:</strong> <?php echo $shipment_number; ?><br>
-                <canvas id="qrReceiveNumber" class="qrcode"></canvas>
+                <canvas id="qrReceiveNumber" class="barcode"></canvas>
             </div>
         </div>
 
@@ -193,25 +194,27 @@
                 </tr>
             </thead>
             <tbody>
-                <?php $no = 1; $total_pick = 0;
+                <?php $no = 1;
+                $total_pick = 0;
                 foreach ($data as $item): $no++; ?>
                     <tr>
                         <td><?php echo $no; ?></td>
                         <td>
-                            <canvas id="qrLocation<?php echo $no; ?>" class="qrcode"></canvas>
+                            <canvas id="qrLocation<?php echo $no; ?>" class="barcode"></canvas>
                             <?php echo $item['location']; ?>
                         </td>
                         <td>
-                            <canvas id="qrItemCode<?php echo $no; ?>" class="qrcode"></canvas>
+                            <canvas id="qrItemCode<?php echo $no; ?>" class="barcode"></canvas>
                             <?php echo $item['item_code']; ?>
                         </td>
                         <td>
-                            <canvas id="qrLpnNumber<?php echo $no; ?>" class="qrcode"></canvas>
+                            <canvas id="qrLpnNumber<?php echo $no; ?>" class="barcode"></canvas>
                             <?php echo $item['lpn_number']; ?>
                         </td>
                         <td><?php echo $item['qty']; ?></td>
                     </tr>
-                <?php $total_pick += $item['qty']; endforeach; ?>
+                <?php $total_pick += $item['qty'];
+                endforeach; ?>
                 <tr>
                     <td colspan="4"><strong>Total</strong></td>
                     <td><strong><?= $total_pick ?></strong></td>
@@ -226,35 +229,60 @@
 
     <script>
         // Generate QR Code for Putaway and Receive Numbers
-        new QRious({
-            element: document.getElementById("qrPutawayNumber"),
-            value: "<?php echo $picking_number; ?>",
-            size: 60
+        // new QRious({
+        //     element: document.getElementById("qrPutawayNumber"),
+        //     value: "<?php echo $picking_number; ?>",
+        //     size: 60
+        // });
+
+        JsBarcode("#qrPutawayNumber", '<?php echo $picking_number; ?>', {
+            format: "CODE128",
+            displayValue: false
         });
-        new QRious({
-            element: document.getElementById("qrReceiveNumber"),
-            value: "<?php echo $shipment_number; ?>",
-            size: 60
+
+        JsBarcode("#qrReceiveNumber", '<?php echo $shipment_number; ?>', {
+            format: "CODE128",
+            displayValue: false
         });
+
+        // new QRious({
+        //     element: document.getElementById("qrReceiveNumber"),
+        //     value: "<?php echo $shipment_number; ?>",
+        //     size: 60
+        // });
 
         // Generate QR Codes for each item
         <?php $no = 1;
         foreach ($data as $item): $no++; ?>
-            new QRious({
-                element: document.getElementById("qrLocation<?php echo $no; ?>"),
-                value: "<?php echo $item['location']; ?>",
-                size: 60
+            // new QRious({
+            //     element: document.getElementById("qrLocation<?php echo $no; ?>"),
+            //     value: "<?php echo $item['location']; ?>",
+            //     size: 60
+            // });
+
+            JsBarcode("#qrLocation" + '<?php echo $no ?>', '<?php echo $no ?>', {
+                format: "CODE128",
+                displayValue: false
             });
-            new QRious({
-                element: document.getElementById("qrItemCode<?php echo $no; ?>"),
-                value: "<?php echo $item['item_code']; ?>",
-                size: 60
+            JsBarcode("#qrItemCode" + '<?php echo $no ?>', '<?php echo $no ?>', {
+                format: "CODE128",
+                displayValue: false
             });
-            new QRious({
-                element: document.getElementById("qrLpnNumber<?php echo $no; ?>"),
-                value: "<?php echo $item['lpn_number']; ?>",
-                size: 60
+            JsBarcode("#qrLpnNumber" + '<?php echo $no ?>', '<?php echo $no ?>', {
+                format: "CODE128",
+                displayValue: false
             });
+
+            // new QRious({
+            //     element: document.getElementById("qrItemCode<?php echo $no; ?>"),
+            //     value: "<?php echo $item['item_code']; ?>",
+            //     size: 60
+            // });
+            // new QRious({
+            //     element: document.getElementById("qrLpnNumber<?php echo $no; ?>"),
+            //     value: "<?php echo $item['lpn_number']; ?>",
+            //     size: 60
+            // });
         <?php endforeach; ?>
 
         function printAndClose() {

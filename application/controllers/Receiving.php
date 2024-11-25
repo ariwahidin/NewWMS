@@ -19,8 +19,12 @@ class Receiving extends CI_Controller
 
     public function create()
     {
+
+
+        $title = isset($_GET['edit']) && $_GET['ib'] && !isset($_GET['copy']) ? 'Receiving ' . $_GET['ib'] : 'Create Receiving';
+
         $data = array(
-            'title' => isset($_GET['edit']) && $_GET['ib'] ? 'Receiving ' . $_GET['ib'] : 'Create Receiving',
+            'title' =>  $title,
             'truck' => $this->truck_m->getTruckType(),
             'ekspedisi' => $this->ekspedisi_m->getEkspedisi(),
             'supplier' => $this->supplier_m->getAllItem(),
@@ -53,8 +57,9 @@ class Receiving extends CI_Controller
 
     public function edit()
     {
+        $title = isset($_GET['edit']) && $_GET['ib'] && !isset($_GET['copy']) ? 'Receiving ' . $_GET['ib'] : 'Copy Receive';
         $data = array(
-            'title' => isset($_GET['edit']) && $_GET['ib'] ? 'Receiving ' . $_GET['ib'] : 'Create Receiving',
+            'title' =>  $title,
             'truck' => $this->truck_m->getTruckType(),
             'ekspedisi' => $this->ekspedisi_m->getEkspedisi(),
             'supplier' => $this->supplier_m->getAllItem(),

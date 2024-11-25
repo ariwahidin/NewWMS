@@ -565,7 +565,7 @@
                 updateCartTable(order.item_code, true);
             }
 
-            console.log(selectedOrders);
+            // console.log(selectedOrders);
 
             // Update tabel cart
 
@@ -646,8 +646,6 @@
                 }
 
                 if (prosesAction == 'edit') {
-                    // $('#btnPutaway').css('display', 'block');
-                    // $('#btnPutaway').prop('disabled', false);
                 }
 
                 $('#generateSPK').prop('disabled', false); // Aktifkan tombol Generate SPK jika ada order di cart
