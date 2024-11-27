@@ -36,8 +36,19 @@ class Shipment extends CI_Controller
 
     public function index()
     {
+
+        $title = "Create Shipment";
+
+        if (isset($_GET['edit']) && $_GET['ob'] && !isset($_GET['copy'])) {
+            $title = 'Shipment ' . $_GET['ob'];
+        }
+
+        if (isset($_GET['edit']) && $_GET['ob'] && isset($_GET['copy'])) {
+            $title = "Copy Shipment";
+        }
+
         $data = array(
-            'title' => isset($_GET['edit']) && $_GET['ob'] ? 'Shipment ' . $_GET['ob'] : 'Create Shipment',
+            'title' => $title,
             'truck' => $this->truck_m->getTruckType(),
             'ekspedisi' => $this->ekspedisi_m->getEkspedisi(),
             'customer' => $this->customer_m->getAllItem(),

@@ -23,26 +23,25 @@
 <div class="row">
     <div class="col col-md-12">
         <div class="card">
-            <div class="card-header">
+            <!-- <div class="card-header">
                 <h5 clas="card-title">Picking List</h5>
-            </div>
+            </div> -->
             <div class="card-body table-responsive">
-                <div class="mb-3">
+                <!-- <div class="mb-3">
                     <input type="text" id="search" class="form-control-sm" placeholder="Search">
-                </div>
+                </div> -->
                 <table class="table table-bordered table-hover table-sm table-striped table-hover table-nowrap" id="tablePicking">
                     <thead>
                         <tr>
-                            <th>No.</th>
+                            <th>#</th>
                             <th>Action</th>
-                            <th>Picking Number</th>
-                            <th>Shipment Number</th>
-                            <th>Created Date</th>
+                            <th>Ship No.</th>
+                            <th>Created</th>
                             <th>Customer</th>
-                            <th>Total Items</th>
+                            <th>Items</th>
                             <th>Req Qty</th>
-                            <th>Picked Qty</th>
-                            <th>Picking Status</th>
+                            <th>Pick Qty</th>
+                            <th>Status</th>
                             <th>Created by</th>
                         </tr>
                     </thead>
@@ -56,21 +55,23 @@
                                 <td>
                                     <a href="<?= base_url('picking/index?edit=true&pick_no=' . $data->picking_number) ?>" class="btn btn-sm btn-primary" title=" <?= $data->picking_status == 'N' ? 'Edit' : 'View' ?>"><i class="<?= $data->picking_status == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
                                     <a href="<?= base_url('picking/printPickingSheet?pick_no=' . $data->picking_number . '&ship_no=' . $data->shipment_number . '&type=print') ?>" class="btn btn-sm btn-info" target="_blank" rel="noopener noreferrer" title="Print Picking Sheet"> <i class="ri-printer-fill"></i></a>
+                                    <a href="<?= base_url('picking/printLabel?pick_no=' . $data->picking_number . '&ship_no=' . $data->shipment_number . '&type=print') ?>" class="btn btn-sm btn-outline-info" target="_blank" rel="noopener noreferrer" title="Print Label"> <i class="ri-printer-fill"></i></a>
+                                    <a href="<?= base_url('packingScan/index?ob=' . $data->shipment_number) ?>" class="btn btn-sm btn-warning" title="Packing"> <i class="ri ri-inbox-archive-line"></i></a>
+                                    <a href="<?= base_url('ShippingLoading/index?ob=' . $data->shipment_number) ?>" class="btn btn-sm btn-outline-primary" title="Shipping Loading"> <i class="ri  ri-truck-line"></i></a>
 
                                     <?php if ($data->picking_status == 'N') { ?>
-                                        <button type="button" class="btn btn-sm btn-primary d-inline confirmPicking" data-pick-number="<?= $data->picking_number ?>" title="Complete Picking"> <i class="ri-check-fill"></i></button>
+                                        <!-- <button type="button" class="btn btn-sm btn-primary d-inline confirmPicking" data-pick-number="<?= $data->picking_number ?>"  title="Complete Picking"> <i class="ri-check-fill"></i></button> -->
                                     <?php } ?>
                                 </td>
-                                <td> <a href="<?= base_url('picking/index?edit=true&pick_no=' . $data->picking_number) ?>"><?= $data->picking_number ?></a></td>
                                 <td><?= $data->shipment_number ?></td>
-                                <td><?= $data->created_at ?></td>
+                                <td><?= date('Y-m-d', strtotime($data->created_at)) ?></td>
                                 <td><?= $data->customer_name ?></td>
                                 <td><?= $data->total_item ?></td>
                                 <td><?= $data->total_qty_req ?></td>
                                 <td><?= $data->qty_pick ?></td>
                                 <td><?= $data->picking_status == 'N' ? 'Pending' : 'Complete'; ?></td>
                                 <td><?= $data->created_by ?></td>
-                               
+
                             </tr>
                         <?php
                         }
@@ -88,53 +89,56 @@
     $(document).ready(function() {
 
         $('#tablePicking').DataTable({
-            scrollX: true,
+            // scrollX: true,
+            columnDefs: [
+                { orderable: false, targets: 1 }
+            ],
             fixedColumns: {
-                leftColumns: 4 // Mengunci 3 kolom pertama
+                leftColumns: 3 // Mengunci 3 kolom pertama
             }
         });
 
-        $('.confirmPicking').on('click', function() {
-            let pick_number = $(this).data('pick-number');
+        // $('.confirmPicking').on('click', function() {
+        //     let pick_number = $(this).data('pick-number');
 
-            Swal.fire({
-                icon: 'question',
-                title: 'Are you sure?',
-                text: 'Do you want to proceed, you cannot undo this action?',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, proceed',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post('<?= site_url('picking/completePicking') ?>', {
-                        pick_no: pick_number
-                    }, function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                timer: 1500,
-                                showConfirmButton: false,
-                                timerProgressBar: true,
-                                didOpen: () => {
-                                    Swal.showLoading()
-                                },
-                                text: response.message
-                            }).then(() => {
-                                location.reload();
-                            })
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Failed',
-                                text: response.message
-                            });
-                        }
-                    }, 'JSON');
-                }
-            })
-        });
+        //     Swal.fire({
+        //         icon: 'question',
+        //         title: 'Are you sure?',
+        //         text: 'Do you want to proceed, you cannot undo this action?',
+        //         showCancelButton: true,
+        //         confirmButtonColor: '#3085d6',
+        //         cancelButtonColor: '#d33',
+        //         confirmButtonText: 'Yes, proceed',
+        //         cancelButtonText: 'Cancel'
+        //     }).then((result) => {
+        //         if (result.isConfirmed) {
+        //             $.post('<?= site_url('picking/completePicking') ?>', {
+        //                 pick_no: pick_number
+        //             }, function(response) {
+        //                 if (response.success) {
+        //                     Swal.fire({
+        //                         icon: 'success',
+        //                         title: 'Success',
+        //                         timer: 1500,
+        //                         showConfirmButton: false,
+        //                         timerProgressBar: true,
+        //                         didOpen: () => {
+        //                             Swal.showLoading()
+        //                         },
+        //                         text: response.message
+        //                     }).then(() => {
+        //                         location.reload();
+        //                     })
+        //                 } else {
+        //                     Swal.fire({
+        //                         icon: 'error',
+        //                         title: 'Failed',
+        //                         text: response.message
+        //                     });
+        //                 }
+        //             }, 'JSON');
+        //         }
+        //     })
+        // });
     })
 </script>

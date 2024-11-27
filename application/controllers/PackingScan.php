@@ -80,7 +80,7 @@ class PackingScan extends CI_Controller
         $itemIsFull = $this->packing_scan_m->checkPackingIsFull($shipment_number, $item_code);
 
         foreach ($itemIsFull->result() as $is) {
-            if ($is->qty_pack >= $is->qty_pick) {
+            if ($is->qty_pack + $qty > $is->qty_pick) {
                 $response = array(
                     'success' => false,
                     'message' => 'Item' . $item_code . ' is full packed'
@@ -146,11 +146,24 @@ class PackingScan extends CI_Controller
         $progress = 0;
         $qty_picked = 0;
         $qty_packed = 0;
+
+        if ($picked->num_rows() < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment number not found'
+            );
+            echo json_encode($response);
+            return;
+        }
+
         foreach ($picked->result() as $pick) {
             $qty_picked += $pick->qty_pick;
             $qty_packed += $pick->qty_pack;
         }
         $progress = ($qty_packed / $qty_picked) * 100;
+
+
+
         $progress = number_format($progress, 2);
 
         $response = array(
@@ -190,6 +203,39 @@ class PackingScan extends CI_Controller
             'success' => true,
             'data' => $items->result()
         );
+        echo json_encode($response);
+    }
+
+    public function editPacking()
+    {
+        date_default_timezone_set('Asia/Jakarta');
+        $post = $this->input->post();
+        $dataUpdate = array(
+            'item_code' => $post['edit_item_code'],
+            'qty_in' => $post['edit_qty_in'],
+            'qty_uom' => $post['edit_qty_uom'],
+            'qty' => $post['edit_qty_in'] * $post['edit_qty_uom'],
+            'uom' => $post['edit_uom'],
+            'carton' => $post['edit_ctn_no'],
+            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_by' => $this->session->userdata('user_data')['username']
+        );
+
+        $this->db->where(array('id' => $post['edit_id']));
+        $this->db->update('packing_detail', $dataUpdate);
+
+        if ($this->db->affected_rows() > 0) {
+            $response = array(
+                'success' => true,
+                'message' => 'Data updated successfully'
+            );
+        } else {
+            $response = array(
+                'success' => true,
+                'message' => 'Failed update data'
+            );
+        }
+
         echo json_encode($response);
     }
 }

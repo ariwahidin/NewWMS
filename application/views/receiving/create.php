@@ -1,11 +1,48 @@
 <?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
-<?php if (isset($_GET['edit']) && $order->created_by != $_SESSION['user_data']['username']) { ?>
+<?php
+$prosesAction = (isset($order)) && $order->receive_number && !isset($_GET['copy']) ? 'edit' : 'add';
+$copy = false;
+if (isset($_GET['copy'])) {
+    $copy = true;
+}
+
+$isComplete = false;
+if (isset($order->is_complete)) {
+    if ($order->is_complete == 'Y') {
+        $isComplete = true;
+    }
+}
+
+
+$receiveNumber = "Auto Generated";
+if (isset($order->receive_number) && !isset($_GET['copy'])) {
+    $receiveNumber = $order->receive_number;
+}
+
+$saveAllowed = true;
+
+if (isset($order->created_by)) {
+    if ($order->created_by != $_SESSION['user_data']['username']) {
+        $saveAllowed = false;
+    }
+
+    if ($order->created_by == $_SESSION['user_data']['username'] && $isComplete) {
+        $saveAllowed = false;
+    }
+
+    if ($copy) {
+        $saveAllowed = true;
+    }
+}
+
+
+
+?>
+<?php if (!$saveAllowed && !$isComplete) { ?>
     <div class="row">
         <div class="col-md-12">
             <div class="alert bg-danger border-danger text-white mb-3 mt-0" role="alert">
-                <!-- alert untuk user yang bukan pembuat tugas ini jadi tidak boleh edit -->
                 <strong>You are not the creator of this task, so you are not allowed to edit it, </strong> the creator is : <b><?= $order->created_by ?></b>
-
             </div>
         </div>
     </div>
@@ -15,12 +52,8 @@
     <div class="col-md-12">
         <a href="javascript:history.back()" class="btn btn-primary btn-sm mb-3"><i class="mdi mdi-keyboard-backspace"></i> Back</a>
 
-        <?php if (isset($_GET['edit']) && $order->created_by == $_SESSION['user_data']['username']) { ?>
+        <?php if ($saveAllowed) { ?>
             <button type="button" class="btn btn-primary btn-sm mb-3" id="generateSPK" disabled><i class="mdi mdi-content-save"></i> Save</button>
-        <?php } ?>
-
-        <?php if (!isset($_GET['edit'])) { ?>
-            <button type="button" class="btn btn-primary btn-sm mb-3" id="generateSPK" disabled> <i class="mdi mdi-content-save"></i> Save</button>
         <?php } ?>
         <div class="card mb-3">
             <div class="card-header bg-primary d-none">
@@ -35,12 +68,9 @@
                                     <td>Receive Number</td>
                                     <td>:</td>
                                     <td>
-                                        <?php
-                                        $prosesAction = (isset($order)) && $order->receive_number && !isset($_GET['copy']) ? 'edit' : 'add';
-                                        ?>
                                         <input type="hidden" id="prosesAction" value="<?= $prosesAction; ?>">
-                                        <input style="max-width: 100px" type="text" class="form-control-sm" placeholder="" value="<?= $order->receive_number && !isset($_GET['copy'])  ? $order->receive_number : 'Auto Generated' ?>" readonly>
-                                        <input style="max-width: 100px" type="hidden" class="form-control-sm" id="spkNumber" placeholder="" value="<?= $order->receive_number ?? 'Auto Generated' ?>" readonly>
+                                        <input style="max-width: 100px" type="text" class="form-control-sm" placeholder="" value="<?= $receiveNumber ?>" readonly>
+                                        <input style="max-width: 100px" type="hidden" class="form-control-sm" id="spkNumber" placeholder="" value="<?= $order->receive_number ?? '' ?>" readonly>
                                         <input style="max-width: 80px" type="hidden" class="form-control-sm d-inline" id="status" placeholder="" value="<?= $order->is_complete ?? '' ?>" readonly>
                                     </td>
                                 </tr>
@@ -460,7 +490,9 @@
 
         function makeFieldsReadonly() {
             let status = $('#status').val();
-            if (status == 'Y') {
+            let edit = "<?= $_GET['edit'] ?? '' ?>";
+            let copy = "<?= $_GET['copy'] ?? '' ?>";
+            if (edit === 'true' && copy != 'true' && status == 'Y') {
 
                 document.querySelectorAll('.headerInfo').forEach(container => {
                     // Set input dan select di dalam .headerInfo menjadi readonly atau disabled
@@ -513,21 +545,30 @@
                         stopLoading();
                     });
 
-                    // if (prosesAction == 'edit') {
-                    selectedOrders = data.shipment_current;
+                    let copy = false;
+                    <?php
+                    if (isset($_GET['copy'])) {
+                    ?>
+                        copy = true;
+                    <?php
+                    }
+                    ?>
 
-                    $.each(selectedOrders, function(index, order) {
-                        order.item_code = order.item_code;
-                    });
+                    if (prosesAction != 'add' || copy) {
+                        selectedOrders = data.shipment_current;
 
-                    updateCartTable();
+                        $.each(selectedOrders, function(index, order) {
+                            order.item_code = order.item_code;
+                        });
 
-                    $.each(selectedOrders, function(index, order) {
-                        $('#tableShipments input[value="' + order.item_code + '"]').prop('checked', true);
-                    })
+                        updateCartTable();
 
-                    makeFieldsReadonly();
-                    // }
+                        $.each(selectedOrders, function(index, order) {
+                            $('#tableShipments input[value="' + order.item_code + '"]').prop('checked', true);
+                        })
+
+                        makeFieldsReadonly();
+                    }
                 }
             });
         }

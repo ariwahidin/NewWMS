@@ -324,7 +324,7 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4">Total : </td>
+                                    <td colspan="5">Total : </td>
                                     <td><strong id="totalPicked"></strong></td>
                                 </tr>
                             </tfoot>

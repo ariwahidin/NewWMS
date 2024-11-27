@@ -28,8 +28,31 @@
                                     <td>Shipment Number</td>
                                     <td>:</td>
                                     <td>
-                                        <input type="hidden" id="prosesAction" value="<?= (isset($order)) && $order->shipment_number ? 'edit' : 'add'; ?>">
-                                        <input style="max-width: 100px" type="text" class="form-control-sm" id="shipmentNumber" placeholder="" value="<?= $order->shipment_number ?? 'Auto Generated' ?>" readonly>
+
+                                        <?php
+                                        $prosesAction = "add";
+                                        if (isset($_GET['edit'])) {
+                                            $prosesAction = "edit";
+                                        }
+
+                                        if (isset($_GET['edit']) && isset($_GET['copy'])) {
+                                            $prosesAction = "add";
+                                        }
+
+
+                                        $shipmetNumber = "Auto Generated";
+                                        if (isset($order->shipment_number)) {
+                                            $shipmetNumber = $order->shipment_number;
+                                        }
+
+                                        if (isset($order->shipment_number) && isset($_GET['copy'])) {
+                                            $shipmetNumber = "Auto Generated";
+                                        }
+                                        ?>
+
+                                        <input type="hidden" id="prosesAction" value="<?= $prosesAction ?>">
+                                        <input style="max-width: 100px" type="hidden" class="form-control-sm" id="shipmentNumber" placeholder="" value="<?= $order->shipment_number ?? '' ?>" readonly>
+                                        <input style="max-width: 100px" type="text" class="form-control-sm" placeholder="" value="<?= $shipmetNumber ?>" readonly>
                                         <input style="max-width: 80px" type="hidden" class="form-control-sm d-inline" id="status" placeholder="" value="<?= $order->is_complete ?? '' ?>" readonly>
                                     </td>
                                 </tr>
@@ -229,6 +252,8 @@
             </div>
         </div>
     </div>
+
+
 
     <div class="col-md-12">
         <div class="card">
@@ -506,8 +531,17 @@
             let dataToPost = {};
 
             let prosesAction = $('#prosesAction').val();
+            let copy = false;
 
-            if (prosesAction == 'edit') {
+            <?php
+            if (isset($_GET['copy'])) {
+            ?>
+                copy = true;
+            <?php
+            }
+            ?>
+
+            if (prosesAction == 'edit' || copy == true) {
                 dataToPost.ob_no = $('#shipmentNumber').val();
             }
 
@@ -542,19 +576,20 @@
                         stopLoading();
                     });
 
+                    
+                    selectedOrders = data.shipment_current;
+
+                    $.each(selectedOrders, function(index, order) {
+                        order.item_code = order.item_code;
+                    });
+
+                    updateCartTable();
+
+                    $.each(selectedOrders, function(index, order) {
+                        $('#tableShipments input[value="' + order.item_code + '"]').prop('checked', true);
+                    })
+
                     if (prosesAction == 'edit') {
-                        selectedOrders = data.shipment_current;
-
-                        $.each(selectedOrders, function(index, order) {
-                            order.item_code = order.item_code;
-                        });
-
-                        updateCartTable();
-
-                        $.each(selectedOrders, function(index, order) {
-                            $('#tableShipments input[value="' + order.item_code + '"]').prop('checked', true);
-                        })
-
                         makeFieldsReadonly();
                     }
                 }
@@ -766,6 +801,7 @@
             </tr>
         `;
         }
+
 
         // Event listener for 'add-line' button to duplicate row
         $('#cartTable').on('click', '.add-line', function() {

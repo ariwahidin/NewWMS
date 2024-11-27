@@ -211,3 +211,16 @@ function wsConfig()
     $query = $CI->db->query($sql);
     return $query->row();
 }
+
+function getItemPacked($shipment_number, $carton)
+{
+    $CI = &get_instance();
+    $sql = "SELECT item_code, SUM(qty_in) as qty_in, uom, shipment_number, carton 
+            FROM packing_detail
+            WHERE shipment_number = ? AND carton = ?
+            GROUP BY item_code, uom, shipment_number, carton
+            ORDER BY carton ASC";
+    $where = array($shipment_number, $carton);
+    $query = $CI->db->query($sql, $where);
+    return $query;
+}

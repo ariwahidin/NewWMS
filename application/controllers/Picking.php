@@ -6,7 +6,7 @@ class Picking extends CI_Controller
     function __construct()
     {
         parent::__construct();
-        $this->load->model(['picking_m', 'order_m', 'truck_m', 'ekspedisi_m', 'customer_m', 'shipment_m', 'inventory_m']);
+        $this->load->model(['picking_m', 'order_m', 'truck_m', 'ekspedisi_m', 'customer_m', 'shipment_m', 'inventory_m', 'packing_m']);
         is_not_logged_in();
     }
 
@@ -47,7 +47,7 @@ class Picking extends CI_Controller
     public function list()
     {
         $data = array(
-            'title' => 'Picking',
+            'title' => 'Pick and Pack',
             'picking' => $this->picking_m->getPickingList()
         );
         $this->render('picking/list_picking/index', $data);
@@ -433,8 +433,8 @@ class Picking extends CI_Controller
     {
         $post = $this->input->post();
 
-        // var_dump($post);
-        // die;
+        var_dump($post);
+        die;
 
         $pick_no = $post['pick_no'];
         $picking = $this->db->get_where('picking_header', array('picking_number' => $pick_no));
@@ -480,9 +480,6 @@ class Picking extends CI_Controller
         $this->db->where('id', $picking_id);
         $this->db->update('picking_header', $data);
 
-        // var_dump($picking_detail->result());
-        // die;
-
         foreach ($picking_detail->result() as $row) {
             $this->db->where('id', $row->inventory_id);
             $this->db->set('allocated', 'allocated - ' . $row->qty, FALSE);
@@ -498,23 +495,6 @@ class Picking extends CI_Controller
             $this->db->set('on_hand', 'on_hand + ' . $row1->qty, FALSE);
             $this->db->update('inventory');
         }
-
-
-
-        // pencatatan history
-        // foreach ($picking_detail->result() as $row2) {
-        //     $dataHistory = array(
-        //         'trans_id' => $trans_id_picking,
-        //         'reff_no' => $pick_no,
-        //         'location' => $row2->to_location,
-        //         'item_code' => $row2->item_code,
-        //         'lpn_id' => $row2->lpn_id,
-        //         'lpn_number' => $row2->lpn_number,
-        //         'qty' => $row2->qty,
-        //         'created_by' => $_SESSION['user_data']['username']
-        //     );
-        //     $this->db->insert('transaction_history', $dataHistory);
-        // }
 
 
         // pencatatan inventory movement
@@ -589,5 +569,22 @@ class Picking extends CI_Controller
             'picking_detail' => $picking_detail
         );
         $this->load->view('picking/picking_sheet', $data);
+    }
+
+
+    public function printLabel()
+    {
+        $shipment_number = $this->input->get('ship_no') ?? null;
+        $label = $this->packing_m->getPackingLabel($shipment_number);
+
+        if ($label->num_rows() < 1) {
+            echo "Data not found";
+            exit;
+        }
+
+        $data = array(
+            'label' => $label
+        );
+        $this->load->view('picking/label', $data);
     }
 }

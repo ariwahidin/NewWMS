@@ -3,50 +3,53 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="fs-15 fw-semibold mb-0">
-                    <button type="button" class="btn btn-sm btn-circle btn-outline-secondary" id="viewPicking">
+                    <button id="btnTransporter" class="btn btn-sm btn-circle btn-outline-primary" title="Transporter">
+                        <i class="ri ri-truck-line"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-circle btn-outline-secondary" title="List Carton" id="viewPicking">
                         <i class="ri ri-survey-line"></i>
                     </button>
+                    <button id="btnConfirm" class="btn btn-success btn-sm float-end d-inline" title="Confirm to close this order">
+                        <i class="mdi mdi-checkbox-marked-circle-outline"></i> CONFIRM
+                    </button>
                     <span id="spanProgress">0</span>%
-                    <button id="btnConfirm" class="btn btn-success float-end d-inline"> <i class="mdi mdi-checkbox-marked-circle-outline"></i> CONFIRM</button>
                 </h5>
             </div>
             <div class="card-body table-responsive text-end" id="divFormPacking">
                 <form id="packingForm" method="post">
                     <table class="table-nowrap table-sm fs-11 mb-0">
                         <tr>
-                            <td><label for="" class="form-label">Shipment Number : </label></td>
+                            <td><label for="" class="form-label">Shipment No. : </label></td>
                             <td>
-                                <input style="max-width: 160px;" type="text" name="shipment_number" class="form-control-sm" value="<?= $_GET['ob'] ?? '' ?>">
+                                <input style="max-width: 160px;" type="text" name="shipment_number" class="form-control-sm" value="">
                             </td>
                         </tr>
                         <tr>
-                            <td><label for="" class="form-label">Item Code : </label></td>
+                            <td><label for="" class="form-label">Carton No : </label></td>
                             <td>
-                                <input type="text" style="max-width: 128px;" id="item_code" name="item_code" class="form-control-sm">
+                                <input type="text" style="max-width: 128px;" id="carton_no" name="carton_no" class="form-control-sm">
                                 <button class="btn btn-danger btn-sm" id="btnClear">
                                     <i class="ri ri-delete-bin-line"></i>
                                 </button>
                             </td>
                         </tr>
                         <tr>
-                            <td><label for="" class="form-label">Qty : </label></td>
+                            <td><label for="" class="form-label">Qty Carton: </label></td>
                             <td>
-                                <input type="text" style="max-width: 78px;" name="qty_in" class="form-control-sm" required>
-                                <input type="hidden" name="qty_uom" class="form-control-sm" required>
-                                <input type="text" style="max-width: 78px;" name="uom" class="form-control-sm" readonly placeholder="UoM" required>
+                                <input type="text" style="max-width: 160px;" name="qty_carton" class="form-control-sm" required>
                             </td>
                         </tr>
                         <tr>
-                            <td><label for="" class="form-label">Carton No. : </label></td>
+                            <td><label for="" class="form-label">Container No : </label></td>
                             <td>
-                                <input style="max-width: 160px;" type="text" name="ctn_no" class="form-control-sm" value="001" required>
+                                <input type="text" style="max-width: 160px;" name="container_no" value="001" class="form-control-sm" required>
                             </td>
                         </tr>
                     </table>
                     <div class="modal-footer mt-3 mb-0 pb-0 border-0 gap-2 d-flex d-inline justify-content-center">
-                        <button onclick="document.getElementById('packingForm').reset()" type="button" style="min-width: 100px;" class="btn btn-warning">CANCEL</button>
-                        <button type="button" style="min-width: 100px;" class="btn btn-info" id="btnSearch">SEARCH</button>
-                        <button type="submit" style="min-width: 100px;" class="btn btn-primary">PACK</button>
+                        <button onclick="document.getElementById('packingForm').reset()" type="button" style="min-width: 100px;" class="btn btn-warning btn-sm">CANCEL</button>
+                        <button type="button" style="min-width: 100px;" class="btn btn-info btn-sm" id="btnSearch">SEARCH</button>
+                        <button type="submit" style="min-width: 100px;" class="btn btn-primary btn-sm">IN</button>
                     </div>
                 </form>
             </div>
@@ -55,7 +58,7 @@
     <div class="col-md-6 col-sm-12">
         <div class="card">
             <div class="card-header">
-                <h5>Packed Items
+                <h5>Container
                     <button class="btn btn-warning btn-sm float-end" id="btnRefresh"> <i class="ri ri-restart-line"></i> Refresh</button>
                 </h5>
             </div>
@@ -64,15 +67,57 @@
                     <thead>
                         <tr>
                             <th>No.</th>
-                            <th>ItemCode</th>
-                            <th>Qty</th>
-                            <th>UoM</th>
-                            <th>Pcs</th>
-                            <th>Carton</th>
+                            <th>Container No.</th>
+                            <th>Shipment No.</th>
+                            <th>Carton No.</th>
+                            <th>Qty Carton</th>
                             <th>Action</th>
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalTransporter">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Transporter</h5>
+            </div>
+            <div class="modal-body">
+                <form id="formTransporter">
+                    <table class="table-nowrap table-sm fs-11 mb-0">
+                        <tr>
+                            <td><label for="" class="form-label">Transporter : </label></td>
+                            <td>
+                                <input type="text" name="transporter" style="max-width: 160px;" class="form-control-sm">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label for="" class="form-label">No Truck : </label></td>
+                            <td>
+                                <input type="text" name="no_truck" style="max-width: 160px;" class="form-control-sm">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label for="" class="form-label">Driver Name : </label></td>
+                            <td>
+                                <input type="text" name="driver_name" style="max-width: 160px;" class="form-control-sm">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><label for="" class="form-label">Driver Telp : </label></td>
+                            <td>
+                                <input type="text" name="driver_tlp" style="max-width: 160px;" class="form-control-sm">
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="modal-footer mt-3 mb-0 pb-0 border-0 gap-2 d-flex d-inline justify-content-center">
+                        <button type="submit" style="min-width: 100px;" class="btn btn-primary">SAVE</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -119,7 +164,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Picked Item</h5>
+                <h5 class="modal-title" id="exampleModalLabel">Carton List</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -127,10 +172,9 @@
                     <thead>
                         <tr>
                             <th>No.</th>
-                            <th>Item Code</th>
-                            <th>Qty Req</th>
-                            <th>Qty Pick (Pcs)</th>
-                            <th>Qty Pack (Pcs)</th>
+                            <th>Shipment No.</th>
+                            <th>Carton No.</th>
+                            <th>Qty</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -148,6 +192,11 @@
     $(document).ready(function() {
         const successSound = new Audio('<?= base_url('myassets/sound/success.mp3') ?>');
         const failedSound = new Audio('<?= base_url('myassets/sound/failed.mp3') ?>');
+
+
+        $('#btnTransporter').on('click', function() {
+            $('#modalTransporter').modal('show');
+        });
 
         $('#packingForm').submit(function(e) {
             e.preventDefault();
@@ -216,7 +265,7 @@
             getPackingDetail();
         });
 
-        getPackingDetail();
+        // getPackingDetail();
 
         function getPackingDetail() {
 
@@ -366,12 +415,6 @@
 
             })
         })
-
-
-
-
-
-
 
         $('#btnConfirm').on('click', function() {
             let shipment_number = $("input[name='shipment_number']").val();

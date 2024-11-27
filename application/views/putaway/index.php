@@ -96,6 +96,8 @@
 <script>
     $(document).ready(function() {
 
+        
+
         $('#includeConfirm').on('change', function() {
             if ($(this).is(':checked')) {
                 window.location = `<?= base_url('putaway/putawayList?includeConfirm=true') ?>`;

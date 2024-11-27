@@ -63,8 +63,9 @@
                                 <td><?= $no++ ?></td>
                                 <td>
                                     <a href="<?= base_url('shipment/index?edit=true&ob=' . $data->shipment_number) ?>" class="btn btn-sm btn-primary" title="<?= $data->is_complete == 'N' ? 'Edit' : 'View' ?>"><i class=" <?= $data->is_complete == 'N' ? 'ri-edit-2-fill' : 'ri-eye-fill' ?>"></i></a>
+                                    <a href="<?= base_url('shipment/index?edit=true&ob=' . $data->shipment_number . "&copy=true") ?>" class="btn btn-sm btn-warning" title="copy shipment"><i class="ri ri-file-copy-2-line"></i></a>
                                     <?php if ($data->is_complete == 'N') { ?>
-                                        <button class="btn btn-sm btn-success btnComplete fs-12" data-ob-number="<?= $data->shipment_number ?>" title="Click to complete the picking process"><i class="ri-check-fill"></i></button>
+                                        <button class="btn btn-sm btn-success btnComplete fs-12" data-ob-number="<?= $data->shipment_number ?>" title="Confirm and start picking"><i class="ri-check-fill"></i></button>
                                     <?php } ?>
                                 </td>
                                 <td><?= $data->shipment_number ?></td>

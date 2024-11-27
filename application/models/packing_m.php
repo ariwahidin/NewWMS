@@ -108,4 +108,20 @@ class Packing_m extends CI_Model
         $query = $this->db->query($sql, array($packing_number));
         return $query;
     }
+
+    public function getPackingLabel($shipment_number)
+    {
+        $sql = "select distinct a.carton, a.shipment_number,
+                b.customer_id, c.customer, c.customer_name, c.ship_to, c.ship_to_address1
+                from packing_detail a
+                inner join shipment_header b on a.shipment_number = b.shipment_number
+                inner join customer c on b.customer_id = c.id
+                WHERE a.shipment_number = ?
+                GROUP BY a.shipment_number, a.carton,
+                b.customer_id, c.customer, c.customer_name, c.ship_to, c.ship_to_address1
+                ORDER BY a.carton ASC";
+        $where = array($shipment_number);
+        $query = $this->db->query($sql, $where);
+        return $query;
+    }
 }
