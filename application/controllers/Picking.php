@@ -363,6 +363,7 @@ class Picking extends CI_Controller
             'picking_number' => $row->picking_number,
             'shipment_id' => $row->shipment_id,
             'shipment_number' => $row->shipment_number,
+            'shipment_detail_id' => $row->shipment_detail_id,
             'whs_code' => $row->whs_code,
             'inventory_id' => $row->id,
             'location' => $row->location,
@@ -424,6 +425,11 @@ class Picking extends CI_Controller
             'created_by' => $_SESSION['user_data']['username']
         );
         $this->db->insert('inventory', $row_insert);
+
+        $inventory_id_shipdock = $this->db->insert_id();
+        $this->db->where('id', $row->picking_detail_id);
+        $this->db->set('inventory_id_shipdock', $inventory_id_shipdock);
+        $this->db->update('picking_detail');
     }
 
 

@@ -19,176 +19,346 @@ class ShippingLoading extends CI_Controller
 
     public function index()
     {
+        $transporter = $this->db->get('ekspedisi')->result();
         $data = array(
+            'transporter' => $transporter,
             'title' => 'Shipping Loading',
         );
         $this->render('shipping_loading/index', $data);
     }
 
 
-    // public function searchShipment()
-    // {
-    //     $post  = $this->input->post(null, true);
+    public function getShipment()
+    {
+        $post  = $this->input->post(null, true);
 
-    //     $shipment_number = $post['shipment_number'];
-    //     $item_code = $post['item_code'];
-    //     $items = $this->packing_scan_m->getPickingDetailByShipment($shipment_number, $item_code);
+        $shipment_number = $post['shipment_number'];
+        $shipment = $this->shipping_load_m->getShipment($shipment_number);
 
-    //     if ($items->num_rows() < 1) {
-    //         $response = array(
-    //             'success' => false,
-    //             'message' => 'Shipment number not found'
-    //         );
-    //         echo json_encode($response);
-    //         return;
-    //     }
+        $response = array(
+            'success' => true,
+            'data' => $shipment->row()
+        );
 
-    //     $response = array(
-    //         'success' => true,
-    //         'data' => $items->result()
-    //     );
+        echo json_encode($response);
+    }
 
-    //     echo json_encode($response);
-    // }
+    public function saveTransporter()
+    {
+        date_default_timezone_set('Asia/Jakarta');
+        $post  = $this->input->post(null, true);
+        $data = array(
+            'transporter_id' => $post['transporter'],
+            'driver_name' => $post['driver_name'],
+            'driver_phone' => $post['driver_tlp'],
+            'truck_no' => $post['no_truck'],
+            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_by' => $this->session->userdata('user_data')['username'],
+        );
+        $this->db->where('id', $post['shipment_id']);
+        $this->db->update('shipment_header', $data);
+        if ($this->db->affected_rows() > 0) {
+            $response = array(
+                'success' => true,
+                'message' => 'Update transporter shipment successfully'
+            );
+        } else {
+            $response = array(
+                'success' => false,
+                'message' => 'Update transporter shipment failed'
+            );
+        }
+        echo json_encode($response);
+    }
 
-    // public function savePacking()
-    // {
-    //     $post = $this->input->post();
-    //     // var_dump($post);
+    public function getCartonList()
+    {
+        $post  = $this->input->post(null, true);
+        $shipment_number = $post['shipment_number'];
+        $carton_list = $this->shipping_load_m->getCartonList($shipment_number);
 
-    //     $shipment_number = $post['shipment_number'];
-    //     $item_code = $post['item_code'];
-    //     $qty_in = $post['qty_in'];
-    //     $qty_uom = $post['qty_uom'];
-    //     $qty = $qty_in * $qty_uom;
-    //     $uom = $post['uom'];
-    //     $items = $this->packing_scan_m->getPickingDetailByShipment($shipment_number, $item_code);
+        $response = array(
+            'success' => true,
+            'data' => $carton_list->result()
+        );
 
-    //     if ($items->num_rows() < 1) {
-    //         $response = array(
-    //             'success' => false,
-    //             'message' => 'Shipment number not found'
-    //         );
-    //         echo json_encode($response);
-    //         return;
-    //     }
+        echo json_encode($response);
+    }
 
-    //     $itemIsFull = $this->packing_scan_m->checkPackingIsFull($shipment_number, $item_code);
+    public function saveLoading()
+    {
+        date_default_timezone_set('Asia/Jakarta');
+        $post = $this->input->post(null, true);
 
-    //     foreach ($itemIsFull->result() as $is) {
-    //         if ($is->qty_pack + $qty > $is->qty_pick) {
-    //             $response = array(
-    //                 'success' => false,
-    //                 'message' => 'Item' . $item_code . ' is full packed'
-    //             );
-    //             echo json_encode($response);
-    //             return;
-    //         }
-    //     }
+        $carton_list = $this->shipping_load_m->getCartonList($post['shipment_number']);
+
+        if ($carton_list->num_rows() < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment ' . $post['shipment_number']  . ' not found'
+            );
+            echo json_encode($response);
+            return;
+        }
+
+        $cartonNotExist = $this->db->get_where('packing_detail', array('shipment_number' => $post['shipment_number'], 'carton' => $post['carton_no']));
+
+        if ($cartonNotExist->num_rows() < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Carton ' . $post['carton_no']  . ' not found'
+            );
+            echo json_encode($response);
+            return;
+        }
 
 
-    //     $this->db->trans_start();
-
-    //     date_default_timezone_set('Asia/Jakarta');
-
-    //     $dataToInsert = array(
-    //         'shipment_number' => $shipment_number,
-    //         'item_code' => $item_code,
-    //         'qty_in' => $qty_in,
-    //         'qty_uom' => $qty_uom,
-    //         'uom' => $uom,
-    //         'qty' => $qty,
-    //         'carton' => $post['ctn_no'],
-    //         'created_at' => date('Y-m-d H:i:s'),
-    //         'created_by' => $this->session->userdata('user_data')['username']
-    //     );
-
-    //     $this->db->insert('packing_detail', $dataToInsert);
-    //     $this->db->trans_complete();
-
-    //     if ($this->db->trans_status() === FALSE) {
-    //         $this->db->trans_rollback();
-    //         $response = array(
-    //             'success' => false,
-    //             'message' => 'Failed to save'
-    //         );
-    //         echo json_encode($response);
-    //         return;
-    //     } else {
-    //         $this->db->trans_commit();
-    //         $response = array(
-    //             'success' => true,
-    //             'message' => 'Successfully saved'
-    //         );
-    //         echo json_encode($response);
-    //         return;
-    //     }
-    // }
-
-    // public function getPackingDetail()
-    // {
-    //     $post = $this->input->post();
-
-    //     $shipment_number = $post['shipment_number'];
-    //     // $item_code = $post['item_code'];
-    //     // $qty_in = $post['qty_in'];
-    //     // $qty_uom = $post['qty_uom'];
-    //     // $qty = $qty_in * $qty_uom;
-    //     // $uom = $post['uom'];
-    //     $items = $this->packing_scan_m->getPackingDetailByShipment($shipment_number);
-
-    //     $picked = $this->packing_scan_m->getPickItemsByShipment($shipment_number);
-
-    //     $progress = 0;
-    //     $qty_picked = 0;
-    //     $qty_packed = 0;
-
-    //     if ($picked->num_rows() < 1) {
-    //         $response = array(
-    //             'success' => false,
-    //             'message' => 'Shipment number not found'
-    //         );
-    //         echo json_encode($response);
-    //         return;
-    //     }
-
-    //     foreach ($picked->result() as $pick) {
-    //         $qty_picked += $pick->qty_pick;
-    //         $qty_packed += $pick->qty_pack;
-    //     }
-    //     $progress = ($qty_packed / $qty_picked) * 100;
+        foreach ($carton_list->result() as $carton) {
+            if ($carton->qty_carton_in + (float)$post['qty_carton'] > $carton->qty_carton && $carton->carton == $post['carton_no']) {
+                $response = array(
+                    'success' => false,
+                    'message' => 'Qty in carton ' . $carton->carton . ' is cannot exceed ' . $carton->qty_carton
+                );
+                echo json_encode($response);
+                return;
+            };
+        }
 
 
 
-    //     $progress = number_format($progress, 2);
 
-    //     $response = array(
-    //         'success' => true,
-    //         'data' => $items->result(),
-    //         'progress' => $progress
-    //     );
 
-    //     echo json_encode($response);
-    // }
+        $this->db->trans_start();
+        date_default_timezone_set('Asia/Jakarta');
 
-    // public function removePackingDetail()
-    // {
-    //     $post = $this->input->post();
-    //     $id = $post['id'];
-    //     $delete = $this->db->delete('packing_detail', array('id' => $id));
-    //     if ($this->db->affected_rows() > 0) {
-    //         $response = array(
-    //             'success' => true,
-    //             'message' => 'Item has been deleted succesfully'
-    //         );
-    //     } else {
-    //         $response = array(
-    //             'success' => false,
-    //             'message' => 'Failed to delete this item'
-    //         );
-    //     }
-    //     echo json_encode($response);
-    // }
+        $dataInsert = array(
+            'shipment_number' => $post['shipment_number'],
+            'container_no' => $post['container_no'],
+            'carton_no' => $post['carton_no'],
+            'qty_carton' => $post['qty_carton'],
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $this->session->userdata('user_data')['username'],
+        );
+
+        $this->db->insert('shipping_load_d', $dataInsert);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            $response = array(
+                'success' => false,
+                'message' => 'Failed to save'
+            );
+            echo json_encode($response);
+            return;
+        } else {
+            $this->db->trans_commit();
+            $response = array(
+                'success' => true,
+                'message' => 'Successfully saved'
+            );
+            echo json_encode($response);
+            return;
+        }
+    }
+
+    public function getContainerDetail()
+    {
+        $post = $this->input->post();
+
+        $shipment_number = $post['shipment_number'];
+        $container = $this->shipping_load_m->getContainerDetail($shipment_number);
+        $carton_list = $this->shipping_load_m->getCartonList($shipment_number);
+
+        $progress = 0;
+        $qty_carton = 0;
+        $qty_carton_in = 0;
+
+        if ($carton_list->num_rows() < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment number not found'
+            );
+            echo json_encode($response);
+            return;
+        }
+
+        foreach ($carton_list->result() as $carton) {
+            $qty_carton += $carton->qty_carton;
+            $qty_carton_in += $carton->qty_carton_in;
+        }
+
+        $progress = ($qty_carton_in / $qty_carton) * 100;
+
+
+
+        $progress = number_format($progress, 2);
+
+        $response = array(
+            'success' => true,
+            'data' => $container->result(),
+            'progress' => $progress
+        );
+
+        echo json_encode($response);
+    }
+
+    public function removeContainerDetail()
+    {
+        $post = $this->input->post();
+        $id = $post['id'];
+        $delete = $this->db->delete('shipping_load_d', array('id' => $id));
+        if ($this->db->affected_rows() > 0) {
+            $response = array(
+                'success' => true,
+                'message' => 'Conatiner has been deleted succesfully'
+            );
+        } else {
+            $response = array(
+                'success' => false,
+                'message' => 'Failed to delete this item'
+            );
+        }
+        echo json_encode($response);
+    }
+
+    public function confirmLoading()
+    {
+        date_default_timezone_set('Asia/Jakarta');
+        $post = $this->input->post(null, true);
+
+
+        $isComplete = $this->db->get_where('shipping_load_h', array('shipment_number' => $post['shipment_number'], 'is_complete' => 'Y'))->num_rows();
+
+        if ($isComplete > 0) {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment ' . $post['shipment_number']  . ' already complete'
+            );
+            echo json_encode($response);
+            return;
+        }
+
+        $carton_list = $this->shipping_load_m->getCartonList($post['shipment_number']);
+
+        if ($carton_list->num_rows() < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment ' . $post['shipment_number']  . ' not found'
+            );
+            echo json_encode($response);
+            return;
+        }
+
+        $carton_list = $this->shipping_load_m->getCartonList($post['shipment_number']);
+
+        $progress = 0;
+        $qty_carton = 0;
+        $qty_carton_in = 0;
+
+        if ($carton_list->num_rows() < 1) {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment number not found'
+            );
+            echo json_encode($response);
+            return;
+        }
+
+        foreach ($carton_list->result() as $carton) {
+            $qty_carton += $carton->qty_carton;
+            $qty_carton_in += $carton->qty_carton_in;
+        }
+
+        $progress = ($qty_carton_in / $qty_carton) * 100;
+
+        if ($progress < 100) {
+            $response = array(
+                'success' => false,
+                'message' => 'Shipment ' . $post['shipment_number']  . ' not complete'
+            );
+            echo json_encode($response);
+            return;
+        }
+
+
+
+        $this->db->trans_start();
+        $shipment_number = $post['shipment_number'];
+        $shipment = $this->db->get_where('shipment_header', array('shipment_number' => $shipment_number));
+        date_default_timezone_set('Asia/Jakarta');
+
+        $shipment_id = $shipment->row()->id;
+        $transID = $this->trans_m->getTransID('Shipping Loading');
+        $prefix = 'SHP';
+        $currentYearMonth = date('ym');
+        $sql = "SELECT TOP 1 shipping_load_number FROM shipping_load_h 
+                    WHERE shipping_load_number LIKE ? 
+                    ORDER BY shipping_load_number DESC";
+        $lastEntry = $this->db->query($sql, array($prefix . $currentYearMonth . '%'))->row();
+
+        if ($lastEntry) {
+            $lastNumber = (int)substr($lastEntry->shipping_load_number, -4);
+            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '0001';
+        }
+        $shipping_load_number = $prefix . $currentYearMonth . $newNumber;
+
+
+        $this->db->trans_start();
+
+        $dataInsertHeader = array(
+            'trans_id' => $transID,
+            'shipping_load_number' => $shipping_load_number,
+            'shipment_id' => $shipment_id,
+            'shipment_number' => $shipment_number,
+            'is_complete' => 'Y',
+            'created_by' => $_SESSION['user_data']['username'],
+            'created_at' => date('Y-m-d H:i:s'),
+        );
+
+        $this->db->insert('shipping_load_h', $dataInsertHeader);
+        $shipping_load_id = $this->db->insert_id();
+
+        $sqlShippingDetail = "UPDATE shipping_load_d 
+                                SET shipping_load_id = ? , 
+                                    shipping_load_number = ? ,
+                                    updated_at = ? ,
+                                    updated_by = ?
+                                WHERE shipment_number = ? AND created_by = ?";
+        $dataUpdateShippingDetail = array(
+            $shipping_load_id,
+            $shipping_load_number,
+            date('Y-m-d H:i:s'),
+            $_SESSION['user_data']['username'],
+            $shipment_number,
+            $_SESSION['user_data']['username']
+        );
+        $this->db->query($sqlShippingDetail, $dataUpdateShippingDetail);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            $response = array(
+                'success' => false,
+                'message' => 'Failed to save'
+            );
+            echo json_encode($response);
+            return;
+        } else {
+            $this->db->trans_commit();
+            $response = array(
+                'success' => true,
+                'message' => 'Successfully saved'
+            );
+            echo json_encode($response);
+            return;
+        }
+    }
+
 
     // public function getItemsPicking()
     // {

@@ -25,6 +25,18 @@ class Packing extends CI_Controller
         $shipment = $this->db->get_where('shipment_header', ['shipment_number' => $shipment_number]);
 
 
+        $isCompleted = $this->db->get_where('packing_header', ['shipment_number' => $shipment_number, 'is_complete' => 'Y']);
+
+        if ($isCompleted->num_rows() > 0) {
+            $response = array(
+                'success' => false,
+                'message' => 'Packing already complete'
+            );
+            echo json_encode($response);
+            return;
+        }
+
+
 
 
         if ($shipment->num_rows() < 1) {

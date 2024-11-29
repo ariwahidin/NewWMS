@@ -576,8 +576,8 @@
                         stopLoading();
                     });
 
-                    
-                    selectedOrders = data.shipment_current;
+
+                    selectedOrders = data.shipment_current ?? selectedOrders;
 
                     $.each(selectedOrders, function(index, order) {
                         order.item_code = order.item_code;
@@ -610,6 +610,10 @@
 
         $('#tableShipments').on('change', '.order-checkbox', function() {
             let order = JSON.parse($(this).attr('data-order'));
+
+            // console.log(selectedOrders);
+            // console.log(order);
+            // return;
 
             if ($(this).is(':checked')) {
                 // Tambahkan ke array selectedOrders
@@ -1025,58 +1029,36 @@
 
                             stopLoading();
 
-
-                            // if (putaway) {
-                            //     let ib_no = $('#shipmentNumber').val();
-                            //     $.post('<?= site_url('putaway/create') ?>', {
-                            //         ib_no
-                            //     }, function(response) {
-                            //         if (response.success == true) {
-                            //             window.location.href = 'receivingList';
-                            //         } else {
-                            //             Swal.fire({
-                            //                 icon: 'error',
-                            //                 title: 'Failed',
-                            //                 text: response.message
-                            //             });
-                            //         }
-                            //     }, 'JSON');
-                            //     return;
-                            // }
-
-
-
                             Swal.fire({
+                                timer: 1000,
                                 icon: 'success',
                                 title: 'Success',
-                                text: 'Data has been saved successfully!',
-                                showCancelButton: true,
-                                confirmButtonText: 'Print SPK',
-                                cancelButtonText: 'Ok',
-                                customClass: {
-                                    confirmButton: 'btn btn-success me-2 d-none',
-                                    cancelButton: 'btn btn-secondary'
+                                text: response.message,
+                                showConfirmButton: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
                                 },
-                                buttonsStyling: false,
-                                allowOutsideClick: false
                             }).then((result) => {
-                                selectedOrders = []; // Kosongkan cart
-                                updateCartTable(); // Refresh tampilan cart
-                                $('#tableShipments input[type="checkbox"]').prop('checked', false);
+                                window.history.back();
+                                // window.location.href = "<?= base_url('shipment/list') ?>"
+                                // selectedOrders = []; // Kosongkan cart
+                                // updateCartTable(); // Refresh tampilan cart
+                                // $('#tableShipments input[type="checkbox"]').prop('checked', false);
 
-                                if (result.isConfirmed) {
-                                    $('body').empty();
-                                    // printSpk(response.spk_number);
-                                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                // if (result.isConfirmed) {
+                                //     $('body').empty();
+                                //     // printSpk(response.spk_number);
+                                // } else if (result.dismiss === Swal.DismissReason.cancel) {
 
-                                    if (prosesAction == 'edit') {
-                                        location.reload();
-                                        return;
-                                    }
+                                //     if (prosesAction == 'edit') {
+                                //         location.reload();
+                                //         return;
+                                //     }
 
-                                    $('body').empty();
-                                    window.location.href = 'list';
-                                }
+                                //     $('body').empty();
+                                //     window.location.href = 'list';
+
+                                // }
                             });
                         } else {
                             stopLoading();

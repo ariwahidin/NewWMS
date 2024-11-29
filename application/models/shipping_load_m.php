@@ -2,23 +2,41 @@
 class Shipping_load_m extends CI_Model
 {
 
-    // public function getPickingDetailByShipment($shipment_number, $item_code)
-    // {
-    //     $sql = "SELECT a.*, b.qty_in, b.qty_uom, b.uom
-    //             FROM picking_detail a
-    //             LEFT JOIN shipment_detail b ON a.shipment_number = b.shipment_number AND a.item_code = b.item_code
-    //             WHERE a.shipment_number = ?
-    //             AND a.item_code = ?";
-    //     $query = $this->db->query($sql, array($shipment_number, $item_code));
-    //     return $query;
-    // }
+    public function getShipment($shipment)
+    {
+        $sql = "select a.*, b.name as transporter_name 
+                from shipment_header a
+                inner join ekspedisi b on a.transporter_id = b.id
+                where a.shipment_number = ?";
+        $query = $this->db->query($sql, array($shipment));
+        return $query;
+    }
 
-    // public function getPackingDetailByShipment($shipment_number)
-    // {
-    //     $sql = "SELECT * FROM packing_detail WHERE shipment_number =?";
-    //     $query = $this->db->query($sql, array($shipment_number));
-    //     return $query;
-    // }
+    public function getCartonList($shipment_number){
+        $sql = "select a.shipment_number, a.carton, 
+                count(a.carton) as qty_carton, isnull(b.qty_carton_in, 0) as qty_carton_in
+                from packing_detail a
+                left join (
+                        select shipment_number, carton_no, sum(qty_carton) as qty_carton_in 
+                        from shipping_load_d
+                        group by shipment_number, carton_no
+                )b on a.shipment_number = b.shipment_number and a.carton = b.carton_no
+                where a.shipment_number = ?
+                and a.is_sealed = 'Y'
+                group by a.shipment_number, a.carton, qty_carton_in
+                order by carton ASC";
+        $query = $this->db->query($sql, array($shipment_number));
+        return $query;
+    }
+
+    public function getContainerDetail($shipment_number)
+    {
+        $sql = "select * 
+                from shipping_load_d
+                where shipment_number = ?";
+        $query = $this->db->query($sql, array($shipment_number));
+        return $query;
+    }
 
     // public function checkPackingIsFull($shipment_number, $item_code)
     // {
